@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import '../../core/orders_service.dart';
 import '../../core/clients_service.dart';
 import '../../core/image_upload_service.dart';
@@ -28,6 +30,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
   final _descriptionController = TextEditingController();
   final List<OrderItem> _items = [];
   final List<File> _images = [];
+  final List<Uint8List> _webImages = [];
   bool _isLoading = false;
 
   @override
@@ -286,8 +289,10 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
     );
   }
 
+  int get _imagesCount => kIsWeb ? _webImages.length : _images.length;
+
   Future<void> _pickImages() async {
-    if (_images.length >= 5) {
+    if (_imagesCount >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Máximo de 5 imagens permitido')),
       );
@@ -301,7 +306,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
       imageQuality: 85,
     );
 
-    if (pickedFiles.length + _images.length > 5) {
+    if (pickedFiles.length + _imagesCount > 5) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Selecione no máximo 5 imagens')),
@@ -310,13 +315,21 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
       return;
     }
 
-    setState(() {
-      _images.addAll(pickedFiles.map((file) => File(file.path)));
-    });
+    if (kIsWeb) {
+      final futures = pickedFiles.map((xf) => xf.readAsBytes());
+      final bytesList = await Future.wait(futures);
+      setState(() {
+        _webImages.addAll(bytesList);
+      });
+    } else {
+      setState(() {
+        _images.addAll(pickedFiles.map((file) => File(file.path)));
+      });
+    }
   }
 
   Future<void> _takePhoto() async {
-    if (_images.length >= 5) {
+    if (_imagesCount >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Máximo de 5 imagens permitido')),
       );
@@ -332,14 +345,27 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
     );
 
     if (photo != null) {
-      setState(() {
-        _images.add(File(photo.path));
-      });
+      if (kIsWeb) {
+        final bytes = await photo.readAsBytes();
+        setState(() {
+          _webImages.add(bytes);
+        });
+      } else {
+        setState(() {
+          _images.add(File(photo.path));
+        });
+      }
     }
   }
 
   void _removeImage(int index) {
-    setState(() => _images.removeAt(index));
+    setState(() {
+      if (kIsWeb) {
+        _webImages.removeAt(index);
+      } else {
+        _images.removeAt(index);
+      }
+    });
   }
 
   void _removeItem(int index) {
@@ -391,10 +417,14 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
         await ref.read(ordersServiceProvider).createOrderItem(orderItem);
       }
 
-      if (_images.isNotEmpty) {
+      if (_imagesCount > 0) {
         try {
           final imageUploadService = ref.read(imageUploadServiceProvider);
-          await imageUploadService.uploadOrderImages(_images, widget.order.id);
+          if (kIsWeb) {
+            await imageUploadService.uploadOrderImagesBytes(_webImages, widget.order.id);
+          } else {
+            await imageUploadService.uploadOrderImages(_images, widget.order.id);
+          }
         } catch (imageError) {
           // Não bloquear a atualização por erro de upload
           // ignore: avoid_print
@@ -603,7 +633,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Imagens (${_images.length}/5)', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('Imagens (${_imagesCount}/5)', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         Row(
                           children: [
                             IconButton(onPressed: _takePhoto, icon: const Icon(Icons.camera_alt), tooltip: 'Tirar Foto'),
@@ -612,12 +642,12 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                         ),
                       ],
                     ),
-                    if (_images.isNotEmpty)
+                    if (_imagesCount > 0)
                       SizedBox(
                         height: 100,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _images.length,
+                          itemCount: _imagesCount,
                           itemBuilder: (context, index) {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
@@ -625,12 +655,19 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
-                                    child: Image.file(
-                                      _images[index],
-                                      width: 100,
-                                      height: 100,
-                                      fit: BoxFit.cover,
-                                    ),
+                                    child: kIsWeb
+                                        ? Image.memory(
+                                            _webImages[index],
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.file(
+                                            _images[index],
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                          ),
                                   ),
                                   Positioned(
                                     top: 4,

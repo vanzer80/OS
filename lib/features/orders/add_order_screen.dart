@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
+import 'dart:typed_data';
 import '../../core/orders_service.dart';
 import '../../core/clients_service.dart';
 import '../../core/image_upload_service.dart';
@@ -27,6 +29,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
 
   final List<OrderItem> _items = [];
   final List<File> _images = [];
+  final List<Uint8List> _webImages = [];
   bool _isLoading = false;
 
   @override
@@ -229,8 +232,10 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
     );
   }
 
+  int get _imagesCount => kIsWeb ? _webImages.length : _images.length;
+
   Future<void> _pickImages() async {
-    if (_images.length >= 5) {
+    if (_imagesCount >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Máximo de 5 imagens permitido')),
       );
@@ -244,7 +249,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
       imageQuality: 85,
     );
 
-    if (pickedFiles.length + _images.length > 5) {
+    if (pickedFiles.length + _imagesCount > 5) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Selecione no máximo 5 imagens')),
@@ -253,13 +258,20 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
       return;
     }
 
-    setState(() {
-      _images.addAll(pickedFiles.map((file) => File(file.path)));
-    });
+    if (kIsWeb) {
+      final bytesList = await Future.wait(pickedFiles.map((xf) => xf.readAsBytes()));
+      setState(() {
+        _webImages.addAll(bytesList);
+      });
+    } else {
+      setState(() {
+        _images.addAll(pickedFiles.map((file) => File(file.path)));
+      });
+    }
   }
 
   Future<void> _takePhoto() async {
-    if (_images.length >= 5) {
+    if (_imagesCount >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Máximo de 5 imagens permitido')),
       );
@@ -275,15 +287,26 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
     );
 
     if (photo != null) {
-      setState(() {
-        _images.add(File(photo.path));
-      });
+      if (kIsWeb) {
+        final bytes = await photo.readAsBytes();
+        setState(() {
+          _webImages.add(bytes);
+        });
+      } else {
+        setState(() {
+          _images.add(File(photo.path));
+        });
+      }
     }
   }
 
   void _removeImage(int index) {
     setState(() {
-      _images.removeAt(index);
+      if (kIsWeb) {
+        _webImages.removeAt(index);
+      } else {
+        _images.removeAt(index);
+      }
     });
   }
 
@@ -358,10 +381,12 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
       }
 
       // Fazer upload das imagens
-      if (_images.isNotEmpty) {
+      if (_imagesCount > 0) {
         try {
           final imageUploadService = ref.read(imageUploadServiceProvider);
-          final uploadedUrls = await imageUploadService.uploadOrderImages(_images, newOrder.id);
+          final uploadedUrls = kIsWeb
+              ? await imageUploadService.uploadOrderImagesBytes(_webImages, newOrder.id)
+              : await imageUploadService.uploadOrderImages(_images, newOrder.id);
           // TODO: Salvar URLs das imagens no banco de dados
           // Imagens enviadas: $uploadedUrls
         } catch (imageError) {
