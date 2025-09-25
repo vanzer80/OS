@@ -31,7 +31,6 @@ migrate_working_dir/
 .pub/
 build/
 coverage/
-lib/generated_plugin_registrant.dart
 pubspec.lock
 
 # Android related
@@ -75,7 +74,6 @@ pubspec.lock
 **/ios/Runner/GeneratedPluginRegistrant.*
 
 # Web related
-lib/generated_plugin_registrant.dart
 
 # Exceptions to above rules
 !**/ios/**/default.mode1v3

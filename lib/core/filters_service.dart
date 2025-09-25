@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../orders_service.dart';
+import 'orders_service.dart';
 
 class FiltersService {
   final SupabaseClient _supabase = Supabase.instance.client;

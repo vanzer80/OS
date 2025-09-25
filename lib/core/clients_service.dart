@@ -92,6 +92,20 @@ class ClientsService {
     }
   }
 
+  Future<Client> getClientById(String id) async {
+    try {
+      final response = await _supabase
+          .from('clients')
+          .select()
+          .eq('id', id)
+          .single();
+
+      return Client.fromJson(response);
+    } catch (error) {
+      throw Exception('Erro ao buscar cliente: $error');
+    }
+  }
+
   Future<Client> createClient(Client client) async {
     try {
       final response = await _supabase

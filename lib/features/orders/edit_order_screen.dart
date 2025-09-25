@@ -8,24 +8,73 @@ import '../../core/clients_service.dart';
 import '../../core/image_upload_service.dart';
 import '../clients/add_client_screen.dart';
 
-class AddOrderScreen extends ConsumerStatefulWidget {
-  const AddOrderScreen({super.key});
+class EditOrderScreen extends ConsumerStatefulWidget {
+  final ServiceOrder order;
+  
+  const EditOrderScreen({super.key, required this.order});
 
   @override
-  ConsumerState<AddOrderScreen> createState() => _AddOrderScreenState();
+  ConsumerState<EditOrderScreen> createState() => _EditOrderScreenState();
 }
 
-class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
+class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
   final _formKey = GlobalKey<FormState>();
-  OrderType _selectedType = OrderType.service;
+  late OrderType _selectedType;
   Client? _selectedClient;
   final _equipmentController = TextEditingController();
   final _modelController = TextEditingController();
   final _descriptionController = TextEditingController();
-
   final List<OrderItem> _items = [];
   final List<File> _images = [];
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeForm();
+  }
+
+  void _initializeForm() {
+    // Preencher dados da ordem existente
+    _selectedType = widget.order.type;
+    _equipmentController.text = widget.order.equipment ?? '';
+    _modelController.text = widget.order.model ?? '';
+    _descriptionController.text = widget.order.description ?? '';
+    
+    // Carregar cliente
+    _loadClient();
+    
+    // Carregar itens
+    _loadOrderItems();
+  }
+
+  Future<void> _loadClient() async {
+    if (widget.order.clientId != null) {
+      try {
+        final client = await ref.read(clientsServiceProvider).getClientById(widget.order.clientId!);
+        if (mounted) {
+          setState(() {
+            _selectedClient = client;
+          });
+        }
+      } catch (error) {
+        // Cliente não encontrado ou erro
+      }
+    }
+  }
+
+  Future<void> _loadOrderItems() async {
+    try {
+      final items = await ref.read(ordersServiceProvider).getOrderItems(widget.order.id);
+      if (mounted) {
+        setState(() {
+          _items.addAll(items);
+        });
+      }
+    } catch (error) {
+      // Erro ao carregar itens
+    }
+  }
 
   @override
   void dispose() {
@@ -39,106 +88,64 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.7,
-        maxChildSize: 0.9,
-        builder: (context, scrollController) {
-          return Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Text(
-                      'Selecionar Cliente',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      icon: const Icon(Icons.close),
-                    ),
-                  ],
+      builder: (context) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.7,
+        child: Column(
+          children: [
+            AppBar(
+              title: const Text('Selecionar Cliente'),
+              automaticallyImplyLeading: false,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Fechar'),
                 ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () async {
+                  final result = await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AddClientScreen(),
+                    ),
+                  );
+                  if (result != null && mounted) {
+                    setState(() => _selectedClient = result);
+                    Navigator.of(context).pop();
+                  }
+                },
+                child: const Text('Cadastrar Cliente'),
               ),
-              Expanded(
-                child: Consumer(
-                  builder: (context, ref, child) {
-                    final clientsAsync = ref.watch(clientsProvider);
-                    return clientsAsync.when(
-                      data: (clients) {
-                        if (clients.isEmpty) {
-                          return Center(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const Icon(Icons.people_outline, size: 64),
-                                const SizedBox(height: 16),
-                                const Text('Nenhum cliente encontrado'),
-                                const SizedBox(height: 16),
-                                ElevatedButton(
-                                  onPressed: () async {
-                                    Navigator.of(context).pop();
-                                    final result = await Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (context) => const AddClientScreen(),
-                                      ),
-                                    );
-                                    if (result != null && mounted) {
-                                      setState(() => _selectedClient = result);
-                                    }
-                                  },
-                                  child: const Text('Cadastrar Cliente'),
-                                ),
-                              ],
-                            ),
-                          );
-                        }
-
-                        return ListView.builder(
-                          controller: scrollController,
-                          itemCount: clients.length,
-                          itemBuilder: (context, index) {
-                            final client = clients[index];
-                            return ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                                child: Text(
-                                  client.name.substring(0, 1).toUpperCase(),
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              title: Text(client.name),
-                              subtitle: Text(client.phone ?? client.email ?? ''),
-                              onTap: () {
-                                setState(() => _selectedClient = client);
-                                Navigator.of(context).pop();
-                              },
-                            );
+            ),
+            Expanded(
+              child: Consumer(
+                builder: (context, ref, child) {
+                  final clientsAsync = ref.watch(clientsProvider);
+                  return clientsAsync.when(
+                    data: (clients) => ListView.builder(
+                      itemCount: clients.length,
+                      itemBuilder: (context, index) {
+                        final client = clients[index];
+                        return ListTile(
+                          title: Text(client.name),
+                          subtitle: Text(client.phone ?? client.email ?? ''),
+                          onTap: () {
+                            setState(() => _selectedClient = client);
+                            Navigator.of(context).pop();
                           },
                         );
                       },
-                      loading: () => const Center(child: CircularProgressIndicator()),
-                      error: (error, stack) => Center(
-                        child: Text('Erro: $error'),
-                      ),
-                    );
-                  },
-                ),
+                    ),
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) => Center(child: Text('Erro: $error')),
+                  );
+                },
               ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -146,7 +153,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
   void _showAddItemDialog() {
     final descriptionController = TextEditingController();
     final quantityController = TextEditingController(text: '1');
-    final priceController = TextEditingController(text: '0.00');
+    final priceController = TextEditingController();
 
     showDialog(
       context: context,
@@ -158,8 +165,8 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
             TextField(
               controller: descriptionController,
               decoration: const InputDecoration(
-                labelText: 'Descrição do Item',
-                hintText: 'Ex: Troca de óleo, Peça X, Serviço Y',
+                labelText: 'Descrição',
+                hintText: 'Ex: Troca de óleo, Filtro de ar',
               ),
             ),
             const SizedBox(height: 16),
@@ -168,21 +175,21 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                 Expanded(
                   child: TextField(
                     controller: quantityController,
+                    keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Quantidade',
                     ),
-                    keyboardType: TextInputType.number,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextField(
                     controller: priceController,
+                    keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
                       labelText: 'Preço Unitário',
                       prefixText: 'R\$ ',
                     ),
-                    keyboardType: TextInputType.number,
                   ),
                 ),
               ],
@@ -198,23 +205,23 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
             onPressed: () {
               final description = descriptionController.text.trim();
               final quantity = int.tryParse(quantityController.text) ?? 1;
-              final unitPrice = double.tryParse(priceController.text.replaceAll(',', '.')) ?? 0.0;
-              final totalPrice = quantity * unitPrice;
+              final price = double.tryParse(priceController.text) ?? 0.0;
 
-              if (description.isNotEmpty) {
+              if (description.isNotEmpty && price > 0) {
+                final item = OrderItem(
+                  id: '',
+                  orderId: '',
+                  description: description,
+                  quantity: quantity,
+                  unitPrice: price,
+                  totalPrice: quantity * price,
+                  createdAt: DateTime.now(),
+                );
+
                 setState(() {
-                  _items.add(
-                    OrderItem(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      orderId: '', // Será definido quando salvar
-                      description: description,
-                      quantity: quantity,
-                      unitPrice: unitPrice,
-                      totalPrice: totalPrice,
-                      createdAt: DateTime.now(),
-                    ),
-                  );
+                  _items.add(item);
                 });
+
                 Navigator.of(context).pop();
               }
             },
@@ -225,10 +232,95 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
     );
   }
 
+  void _showEditItemDialog(int index) {
+    final item = _items[index];
+    final descriptionController = TextEditingController(text: item.description);
+    final quantityController = TextEditingController(text: item.quantity.toString());
+    final priceController = TextEditingController(text: item.unitPrice.toString());
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Editar Item'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Descrição',
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: quantityController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Quantidade',
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Preço Unitário',
+                      prefixText: 'R\$ ',
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _items.removeAt(index);
+              });
+              Navigator.of(context).pop();
+            },
+            child: const Text('Excluir', style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final description = descriptionController.text.trim();
+              final quantity = int.tryParse(quantityController.text) ?? 1;
+              final price = double.tryParse(priceController.text) ?? 0.0;
+
+              if (description.isNotEmpty && price > 0) {
+                setState(() {
+                  _items[index] = item.copyWith(
+                    description: description,
+                    quantity: quantity,
+                    unitPrice: price,
+                    totalPrice: quantity * price,
+                  );
+                });
+                Navigator.of(context).pop();
+              }
+            },
+            child: const Text('Salvar'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _pickImages() async {
     if (_images.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Máximo de 5 imagens permitido')),
+        const SnackBar(content: Text('Máximo de 5 imagens permitidas')),
       );
       return;
     }
@@ -257,7 +349,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
   Future<void> _takePhoto() async {
     if (_images.length >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Máximo de 5 imagens permitido')),
+        const SnackBar(content: Text('Máximo de 5 imagens permitidas')),
       );
       return;
     }
@@ -287,7 +379,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
     return _items.fold(0.0, (sum, item) => sum + item.totalPrice);
   }
 
-  Future<void> _saveOrder() async {
+  Future<void> _updateOrder() async {
     if (!_formKey.currentState!.validate()) return;
     
     if (_selectedClient == null) {
@@ -319,34 +411,29 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
         return;
       }
 
-      final order = ServiceOrder(
-        id: '',
-        userId: currentUser.id,
+      final updatedOrder = widget.order.copyWith(
         clientId: _selectedClient?.id,
-        orderNumber: '', // Será gerado automaticamente
         type: _selectedType,
-        status: OrderStatus.pending,
         equipment: _equipmentController.text.trim().isEmpty ? null : _equipmentController.text.trim(),
         model: _modelController.text.trim().isEmpty ? null : _modelController.text.trim(),
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         totalAmount: _totalAmount,
-        createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      final newOrder = await ref.read(ordersProvider.notifier).createOrder(order);
+      await ref.read(ordersProvider.notifier).updateOrder(widget.order.id, updatedOrder);
 
-      // Salvar itens da ordem
+      // Atualizar itens da ordem (remover todos e recriar)
+      await ref.read(ordersServiceProvider).deleteOrderItems(widget.order.id);
       for (var item in _items) {
-        final orderItem = item.copyWith(orderId: newOrder.id);
+        final orderItem = item.copyWith(orderId: widget.order.id);
         await ref.read(ordersServiceProvider).createOrderItem(orderItem);
       }
 
-      // Fazer upload das imagens
+      // Fazer upload das novas imagens
       if (_images.isNotEmpty) {
         final imageUploadService = ref.read(imageUploadServiceProvider);
-        final uploadedUrls = await imageUploadService.uploadOrderImages(_images, newOrder.id);
-
+        final uploadedUrls = await imageUploadService.uploadOrderImages(_images, widget.order.id);
         // TODO: Salvar URLs das imagens no banco de dados
         // Imagens enviadas: $uploadedUrls
       }
@@ -354,15 +441,15 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ordem ${_selectedType.name == 'service' ? 'de Serviço' : _selectedType.name == 'budget' ? 'de Orçamento' : 'de Venda'} criada com sucesso!'),
+            content: Text('Ordem ${_selectedType.name == 'service' ? 'de Serviço' : _selectedType.name == 'budget' ? 'de Orçamento' : 'de Venda'} atualizada com sucesso!'),
           ),
         );
-        Navigator.of(context).pop(newOrder);
+        Navigator.of(context).pop(updatedOrder);
       }
     } catch (error) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao criar ordem: $error')),
+          SnackBar(content: Text('Erro ao atualizar ordem: $error')),
         );
       }
     } finally {
@@ -376,35 +463,11 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Nova Ordem'),
+        title: Text('Editar Ordem ${widget.order.orderNumber}'),
         centerTitle: true,
         actions: [
-          IconButton(
-            onPressed: () async {
-              // Teste de conexão com Supabase
-              try {
-                final response = await Supabase.instance.client
-                    .from('service_orders')
-                    .select('count')
-                    .count();
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('✅ Conexão OK! Tabela existe')),
-                  );
-                }
-              } catch (error) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('❌ Erro: $error')),
-                  );
-                }
-              }
-            },
-            icon: const Icon(Icons.bug_report),
-            tooltip: 'Testar Conexão',
-          ),
           TextButton(
-            onPressed: _isLoading ? null : _saveOrder,
+            onPressed: _isLoading ? null : _updateOrder,
             child: _isLoading
                 ? const SizedBox(
                     width: 20,
@@ -434,28 +497,34 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Row(
                       children: [
-                        _buildTypeButton(
-                          title: 'Serviço',
-                          subtitle: 'Conserto/Manut.',
-                          type: OrderType.service,
-                          icon: Icons.build,
+                        Expanded(
+                          child: _buildTypeButton(
+                            OrderType.service,
+                            'Serviço',
+                            Icons.build,
+                            Colors.blue,
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        _buildTypeButton(
-                          title: 'Orçamento',
-                          subtitle: 'Cotação/Avaliação',
-                          type: OrderType.budget,
-                          icon: Icons.calculate,
+                        Expanded(
+                          child: _buildTypeButton(
+                            OrderType.budget,
+                            'Orçamento',
+                            Icons.calculate,
+                            Colors.orange,
+                          ),
                         ),
                         const SizedBox(width: 8),
-                        _buildTypeButton(
-                          title: 'Venda',
-                          subtitle: 'Equip./Peças',
-                          type: OrderType.sale,
-                          icon: Icons.shopping_cart,
+                        Expanded(
+                          child: _buildTypeButton(
+                            OrderType.sale,
+                            'Venda',
+                            Icons.shopping_cart,
+                            Colors.green,
+                          ),
                         ),
                       ],
                     ),
@@ -477,35 +546,6 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                 onTap: _showClientSelection,
               ),
             ),
-            
-            // Botão de cliente teste
-            if (_selectedClient == null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    // Criar cliente de teste
-                    final testClient = Client(
-                      id: 'test-client-123',
-                      name: 'Cliente Teste',
-                      email: 'teste@email.com',
-                      phone: '(11) 99999-9999',
-                      address: 'Rua Teste, 123',
-                      createdAt: DateTime.now(),
-                      updatedAt: DateTime.now(),
-                    );
-                    setState(() {
-                      _selectedClient = testClient;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Cliente de teste selecionado!')),
-                    );
-                  },
-                  icon: const Icon(Icons.science),
-                  label: const Text('Usar Cliente Teste'),
-                ),
-              ),
-            
             const SizedBox(height: 16),
 
             // Equipamento e Modelo
@@ -542,7 +582,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
               maxLines: 3,
               decoration: const InputDecoration(
                 labelText: 'Descrição do Serviço',
-                hintText: 'Descreva o que precisa ser feito...',
+                hintText: 'Descreva detalhadamente o serviço a ser realizado...',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -565,37 +605,10 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                // Adicionar item de teste
-                                final testItem = OrderItem(
-                                  id: '',
-                                  orderId: '',
-                                  description: 'Teste - Troca de óleo',
-                                  quantity: 1,
-                                  unitPrice: 50.0,
-                                  totalPrice: 50.0,
-                                  createdAt: DateTime.now(),
-                                );
-                                setState(() {
-                                  _items.add(testItem);
-                                });
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Item de teste adicionado!')),
-                                );
-                              },
-                              icon: const Icon(Icons.science),
-                              tooltip: 'Adicionar Item Teste',
-                            ),
-                            IconButton(
-                              onPressed: _showAddItemDialog,
-                              icon: const Icon(Icons.add),
-                              tooltip: 'Adicionar Item',
-                            ),
-                          ],
+                        IconButton(
+                          onPressed: _showAddItemDialog,
+                          icon: const Icon(Icons.add),
+                          tooltip: 'Adicionar Item',
                         ),
                       ],
                     ),
@@ -613,7 +626,16 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                           return ListTile(
                             title: Text(item.description),
                             subtitle: Text('${item.quantity}x R\$ ${item.unitPrice.toStringAsFixed(2)}'),
-                            trailing: Text('R\$ ${item.totalPrice.toStringAsFixed(2)}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('R\$ ${item.totalPrice.toStringAsFixed(2)}'),
+                                IconButton(
+                                  icon: const Icon(Icons.edit, size: 20),
+                                  onPressed: () => _showEditItemDialog(index),
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),
@@ -630,10 +652,10 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                         ),
                         Text(
                           'R\$ ${_totalAmount.toStringAsFixed(2)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: Colors.green,
                           ),
                         ),
                       ],
@@ -688,15 +710,13 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                               padding: const EdgeInsets.only(right: 8),
                               child: Stack(
                                 children: [
-                                  Container(
-                                    width: 80,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      image: DecorationImage(
-                                        image: FileImage(_images[index]),
-                                        fit: BoxFit.cover,
-                                      ),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      _images[index],
+                                      width: 100,
+                                      height: 100,
+                                      fit: BoxFit.cover,
                                     ),
                                   ),
                                   Positioned(
@@ -705,14 +725,14 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                                     child: GestureDetector(
                                       onTap: () => _removeImage(index),
                                       child: Container(
-                                        padding: const EdgeInsets.all(2),
+                                        padding: const EdgeInsets.all(4),
                                         decoration: const BoxDecoration(
                                           color: Colors.red,
                                           shape: BoxShape.circle,
                                         ),
                                         child: const Icon(
                                           Icons.close,
-                                          size: 12,
+                                          size: 16,
                                           color: Colors.white,
                                         ),
                                       ),
@@ -734,59 +754,35 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
     );
   }
 
-  Widget _buildTypeButton({
-    required String title,
-    required String subtitle,
-    required OrderType type,
-    required IconData icon,
-  }) {
+  Widget _buildTypeButton(OrderType type, String label, IconData icon, Color color) {
     final isSelected = _selectedType == type;
-    return Expanded(
-      child: InkWell(
-        onTap: () => setState(() => _selectedType = type),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            border: Border.all(
-              color: isSelected
-                  ? Theme.of(context).colorScheme.primary
-                  : Theme.of(context).colorScheme.outline,
-              width: isSelected ? 2 : 1,
+    return GestureDetector(
+      onTap: () => setState(() => _selectedType = type),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: isSelected ? color : Theme.of(context).colorScheme.outline,
+            width: isSelected ? 2 : 1,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          color: isSelected ? color.withAlpha(25) : null,
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
             ),
-            borderRadius: BorderRadius.circular(12),
-            color: isSelected
-                ? Theme.of(context).colorScheme.primary.withAlpha(25)
-                : null,
-          ),
-          child: Column(
-            children: [
-              Icon(
-                icon,
-                color: isSelected
-                    ? Theme.of(context).colorScheme.primary
-                    : Theme.of(context).colorScheme.onSurface,
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? color : Theme.of(context).colorScheme.onSurface,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.onSurface,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

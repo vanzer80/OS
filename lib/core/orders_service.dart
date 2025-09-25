@@ -222,32 +222,31 @@ class OrdersService {
     DateTime? endDate,
   }) async {
     try {
-      var query = _supabase
+      var queryBuilder = _supabase
           .from('service_orders')
-          .select()
-          .order('created_at', ascending: false);
+          .select();
 
       if (clientId != null) {
-        query = query.eq('client_id', clientId);
+        queryBuilder = queryBuilder.eq('client_id', clientId);
       }
 
       if (type != null) {
-        query = query.eq('type', type.name);
+        queryBuilder = queryBuilder.eq('type', type.name);
       }
 
       if (status != null) {
-        query = query.eq('status', status.name);
+        queryBuilder = queryBuilder.eq('status', status.name);
       }
 
       if (startDate != null) {
-        query = query.gte('created_at', startDate.toIso8601String());
+        queryBuilder = queryBuilder.gte('created_at', startDate.toIso8601String());
       }
 
       if (endDate != null) {
-        query = query.lte('created_at', endDate.toIso8601String());
+        queryBuilder = queryBuilder.lte('created_at', endDate.toIso8601String());
       }
 
-      final response = await query;
+      final response = await queryBuilder.order('created_at', ascending: false);
       return (response as List)
           .map((json) => ServiceOrder.fromJson(json))
           .toList();
@@ -341,6 +340,33 @@ class OrdersService {
     }
   }
 
+  Future<List<OrderItem>> getOrderItems(String orderId) async {
+    try {
+      final response = await _supabase
+          .from('order_items')
+          .select()
+          .eq('order_id', orderId)
+          .order('created_at', ascending: true);
+
+      return (response as List)
+          .map((json) => OrderItem.fromJson(json))
+          .toList();
+    } catch (error) {
+      throw Exception('Erro ao buscar itens da ordem: $error');
+    }
+  }
+
+  Future<void> deleteOrderItems(String orderId) async {
+    try {
+      await _supabase
+          .from('order_items')
+          .delete()
+          .eq('order_id', orderId);
+    } catch (error) {
+      throw Exception('Erro ao excluir itens da ordem: $error');
+    }
+  }
+
   Future<double> calculateOrderTotal(String orderId) async {
     try {
       final response = await _supabase
@@ -349,7 +375,7 @@ class OrdersService {
           .eq('order_id', orderId);
 
       final items = response as List;
-      return items.fold(0.0, (sum, item) => sum + (item['total_price'] as num).toDouble());
+      return items.fold<double>(0.0, (sum, item) => sum + (item['total_price'] as num).toDouble());
     } catch (error) {
       throw Exception('Erro ao calcular total: $error');
     }

@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as path;
 import 'package:uuid/uuid.dart';
-import '../supabase_config.dart';
+import 'supabase_config.dart';
 
 class ImageUploadService {
   final SupabaseClient _supabase = Supabase.instance.client;

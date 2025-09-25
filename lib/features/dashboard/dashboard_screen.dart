@@ -5,6 +5,7 @@ import '../../core/orders_service.dart';
 import '../../core/filters_service.dart';
 import '../clients/add_client_screen.dart';
 import '../orders/add_order_screen.dart';
+import '../orders/edit_order_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -77,7 +78,7 @@ class HomeTab extends StatelessWidget {
           ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -281,7 +282,7 @@ class _QuickActionCard extends StatelessWidget {
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withAlpha(25),
                   borderRadius: BorderRadius.circular(24),
                 ),
                 child: Icon(icon, color: color, size: 24),
@@ -361,7 +362,7 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+                fillColor: Theme.of(context).colorScheme.surfaceVariant.withAlpha(76),
               ),
             ),
           ),
@@ -607,7 +608,7 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        color: Theme.of(context).colorScheme.surfaceVariant.withAlpha(76),
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).colorScheme.outline,
@@ -778,6 +779,46 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
     );
   }
 
+  void _showDeleteConfirmation(ServiceOrder order) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirmar Exclusão'),
+        content: Text('Deseja realmente excluir a ordem ${order.orderNumber}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              try {
+                await ref.read(ordersProvider.notifier).deleteOrder(order.id);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Ordem ${order.orderNumber} excluída com sucesso!')),
+                  );
+                }
+              } catch (error) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Erro ao excluir ordem: $error')),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildOrdersList(List<ServiceOrder> orders) {
     return RefreshIndicator(
       onRefresh: () async {
@@ -827,17 +868,66 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                   ),
                 ],
               ),
-              trailing: Text(
-                _getStatusText(order.status),
-                style: TextStyle(
-                  color: _getStatusColor(order.status),
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
-                ),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        _getStatusText(order.status),
+                        style: TextStyle(
+                          color: _getStatusColor(order.status),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(width: 8),
+                  PopupMenuButton<String>(
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        final result = await Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => EditOrderScreen(order: order),
+                          ),
+                        );
+                        if (result != null) {
+                          ref.read(ordersProvider.notifier).loadOrders(
+                            type: _selectedType,
+                            status: _selectedStatus,
+                          );
+                        }
+                      } else if (value == 'delete') {
+                        _showDeleteConfirmation(order);
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, size: 20),
+                            SizedBox(width: 8),
+                            Text('Editar'),
+                          ],
+                        ),
+                      ),
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete, size: 20, color: Colors.red),
+                            SizedBox(width: 8),
+                            Text('Excluir', style: TextStyle(color: Colors.red)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              onTap: () {
-                // TODO: Navegar para detalhes da ordem
-              },
             ),
           );
         },
