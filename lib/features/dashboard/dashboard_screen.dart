@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/clients_service.dart';
+import '../../core/orders_service.dart';
+import '../../core/filters_service.dart';
 import '../clients/add_client_screen.dart';
+import '../orders/add_order_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -530,34 +533,378 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
   }
 }
 
-class OrdersTab extends StatelessWidget {
+class OrdersTab extends ConsumerStatefulWidget {
   const OrdersTab({super.key});
 
   @override
+  ConsumerState<OrdersTab> createState() => _OrdersTabState();
+}
+
+class _OrdersTabState extends ConsumerState<OrdersTab> {
+  OrderType? _selectedType;
+  OrderStatus? _selectedStatus;
+  bool _showFilters = false;
+
+  @override
   Widget build(BuildContext context) {
+    final ordersAsync = ref.watch(ordersProvider);
+    final filtersState = ref.watch(filtersProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Ordens de Serviço'),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Implementar filtros
-            },
+            icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
+            onPressed: () => setState(() => _showFilters = !_showFilters),
+            tooltip: _showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros',
           ),
         ],
       ),
-      body: const Center(
-        child: Text('Lista de Ordens - Em desenvolvimento'),
+      body: Column(
+        children: [
+          // Filtros Expansíveis
+          if (_showFilters)
+            _buildFiltersSection(),
+
+          // Lista de Ordens
+          Expanded(
+            child: ordersAsync.when(
+              data: (orders) {
+                if (orders.isEmpty) {
+                  return _buildEmptyState();
+                }
+                return _buildOrdersList(orders);
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stack) => _buildErrorState(error),
+            ),
+          ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: Navegar para nova ordem
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => const AddOrderScreen(),
+            ),
+          );
+          if (result != null) {
+            ref.read(ordersProvider.notifier).loadOrders(
+              type: _selectedType,
+              status: _selectedStatus,
+            );
+          }
         },
-        child: const Icon(Icons.add),
+        label: const Text('Nova Ordem'),
+        icon: const Icon(Icons.add),
       ),
     );
+  }
+
+  Widget _buildFiltersSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.3),
+        border: Border(
+          bottom: BorderSide(
+            color: Theme.of(context).colorScheme.outline,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Filtros',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  ref.read(filtersProvider.notifier).clearFilters();
+                  setState(() {
+                    _selectedType = null;
+                    _selectedStatus = null;
+                  });
+                },
+                child: const Text('Limpar'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Filtros em Grid
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            childAspectRatio: 3,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            children: [
+              // Tipo
+              _buildFilterDropdown<OrderType>(
+                label: 'Tipo',
+                value: _selectedType,
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Todos'),
+                  ),
+                  ...OrderType.values.map((type) {
+                    return DropdownMenuItem(
+                      value: type,
+                      child: Text(
+                        type == OrderType.service ? 'Serviços' :
+                        type == OrderType.budget ? 'Orçamentos' : 'Vendas'
+                      ),
+                    );
+                  }),
+                ],
+                onChanged: (value) {
+                  setState(() => _selectedType = value);
+                },
+              ),
+
+              // Status
+              _buildFilterDropdown<OrderStatus>(
+                label: 'Status',
+                value: _selectedStatus,
+                items: [
+                  const DropdownMenuItem(
+                    value: null,
+                    child: Text('Todos'),
+                  ),
+                  ...OrderStatus.values.map((status) {
+                    return DropdownMenuItem(
+                      value: status,
+                      child: Text(
+                        status == OrderStatus.pending ? 'Pendente' :
+                        status == OrderStatus.inProgress ? 'Em Andamento' :
+                        status == OrderStatus.completed ? 'Concluída' : 'Cancelada'
+                      ),
+                    );
+                  }),
+                ],
+                onChanged: (value) {
+                  setState(() => _selectedStatus = value);
+                },
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Botão Aplicar Filtros
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                ref.read(ordersProvider.notifier).loadOrders(
+                  type: _selectedType,
+                  status: _selectedStatus,
+                );
+              },
+              icon: const Icon(Icons.search),
+              label: const Text('Aplicar Filtros'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterDropdown<T>({
+    required String label,
+    required T? value,
+    required List<DropdownMenuItem<T>> items,
+    required Function(T?) onChanged,
+  }) {
+    return Container(
+      height: 48,
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outline,
+        ),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          isExpanded: true,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          hint: Text(label),
+          style: Theme.of(context).textTheme.bodyMedium,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.assignment_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Nenhuma ordem encontrada',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Crie sua primeira ordem de serviço',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOrdersList(List<ServiceOrder> orders) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        ref.read(ordersProvider.notifier).loadOrders(
+          type: _selectedType,
+          status: _selectedStatus,
+        );
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: orders.length,
+        itemBuilder: (context, index) {
+          final order = orders[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 8),
+            child: ListTile(
+              leading: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _getStatusColor(order.status),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  _getOrderIcon(order.type),
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              title: Text(
+                '${order.orderNumber} - ${order.type == OrderType.service ? 'Serviço' : order.type == OrderType.budget ? 'Orçamento' : 'Venda'}',
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (order.equipment != null)
+                    Text('Equipamento: ${order.equipment}'),
+                  if (order.model != null)
+                    Text('Modelo: ${order.model}'),
+                  Text(
+                    'R\$ ${order.totalAmount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              trailing: Text(
+                _getStatusText(order.status),
+                style: TextStyle(
+                  color: _getStatusColor(order.status),
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onTap: () {
+                // TODO: Navegar para detalhes da ordem
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildErrorState(Object error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text('Erro ao carregar ordens'),
+          const SizedBox(height: 8),
+          Text(error.toString()),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(ordersProvider.notifier).loadOrders(
+                type: _selectedType,
+                status: _selectedStatus,
+              );
+            },
+            child: const Text('Tentar novamente'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getStatusColor(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return Colors.orange;
+      case OrderStatus.inProgress:
+        return Colors.blue;
+      case OrderStatus.completed:
+        return Colors.green;
+      case OrderStatus.cancelled:
+        return Colors.red;
+    }
+  }
+
+  String _getStatusText(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return 'Pendente';
+      case OrderStatus.inProgress:
+        return 'Em Andamento';
+      case OrderStatus.completed:
+        return 'Concluída';
+      case OrderStatus.cancelled:
+        return 'Cancelada';
+    }
+  }
+
+  IconData _getOrderIcon(OrderType type) {
+    switch (type) {
+      case OrderType.service:
+        return Icons.build;
+      case OrderType.budget:
+        return Icons.calculate;
+      case OrderType.sale:
+        return Icons.shopping_cart;
+    }
   }
 }
 
