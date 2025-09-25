@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/clients_service.dart';
 import '../../core/orders_service.dart';
 import '../../core/filters_service.dart';
@@ -60,11 +61,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
-class HomeTab extends StatelessWidget {
+class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('OS Express'),
@@ -146,8 +147,15 @@ class HomeTab extends StatelessWidget {
                     subtitle: 'Criar ordem de serviço',
                     icon: Icons.add_circle,
                     color: Colors.blue,
-                    onTap: () {
-                      // TODO: Navegar para nova ordem
+                    onTap: () async {
+                      final result = await Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const AddOrderScreen(),
+                        ),
+                      );
+                      if (result != null) {
+                        ref.read(ordersProvider.notifier).loadOrders();
+                      }
                     },
                   ),
                 ),
@@ -545,10 +553,26 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
   OrderType? _selectedType;
   OrderStatus? _selectedStatus;
   bool _showFilters = false;
+  final _clientNameController = TextEditingController();
+  String _clientNameQuery = '';
+
+  @override
+  void dispose() {
+    _clientNameController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(ordersProvider);
+    // Obter lista de clientes para mapear id->nome sem bloquear UI
+    final clientsList = ref.watch(clientsProvider).maybeWhen(
+      data: (c) => c,
+      orElse: () => const <Client>[],
+    );
+    final Map<String, String> clientNameById = {
+      for (final c in clientsList) c.id: c.name,
+    };
     final filtersState = ref.watch(filtersProvider);
 
     return Scaffold(
@@ -556,6 +580,29 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
         title: const Text('Ordens de Serviço'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () async {
+              try {
+                final response = await Supabase.instance.client
+                    .from('service_orders')
+                    .select('count')
+                    .count();
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('✅ Conexão OK! Ordens no DB: $response')),
+                  );
+                }
+              } catch (error) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('❌ Erro: $error')),
+                  );
+                }
+              }
+            },
+            tooltip: 'Testar Conexão DB',
+          ),
           IconButton(
             icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
             onPressed: () => setState(() => _showFilters = !_showFilters),
@@ -573,10 +620,35 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
           Expanded(
             child: ordersAsync.when(
               data: (orders) {
+                // Aplicar filtro local por nome do cliente (não altera backend)
+                final lowerQuery = _clientNameQuery.trim().toLowerCase();
+                final filtered = lowerQuery.isEmpty
+                    ? orders
+                    : orders.where((o) {
+                        final name = clientNameById[o.clientId ?? '']?.toLowerCase() ?? '';
+                        return name.contains(lowerQuery);
+                      }).toList();
                 if (orders.isEmpty) {
                   return _buildEmptyState();
                 }
-                return _buildOrdersList(orders);
+                return Column(
+                  children: [
+                    // Debug info
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      margin: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withAlpha(50),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Debug: ${filtered.length}/${orders.length} ordens (após filtro por cliente)',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    Expanded(child: _buildOrdersList(filtered, clientNameById)),
+                  ],
+                );
               },
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, stack) => _buildErrorState(error),
@@ -640,6 +712,35 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // Filtro por nome do cliente
+          TextField(
+            controller: _clientNameController,
+            onChanged: (value) {
+              setState(() {
+                _clientNameQuery = value;
+              });
+            },
+            decoration: InputDecoration(
+              labelText: 'Filtrar por Cliente',
+              hintText: 'Ex: João, Maria...',
+              prefixIcon: const Icon(Icons.person_search),
+              suffixIcon: _clientNameController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _clientNameController.clear();
+                        setState(() => _clientNameQuery = '');
+                      },
+                    )
+                  : null,
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              filled: true,
+              fillColor: Theme.of(context).colorScheme.surface,
+            ),
+          ),
+
+          const SizedBox(height: 12),
 
           // Filtros em Grid
           GridView.count(
@@ -819,7 +920,7 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
     );
   }
 
-  Widget _buildOrdersList(List<ServiceOrder> orders) {
+  Widget _buildOrdersList(List<ServiceOrder> orders, Map<String, String> clientNameById) {
     return RefreshIndicator(
       onRefresh: () async {
         ref.read(ordersProvider.notifier).loadOrders(
@@ -832,6 +933,7 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
         itemCount: orders.length,
         itemBuilder: (context, index) {
           final order = orders[index];
+          final clientName = clientNameById[order.clientId ?? ''];
           return Card(
             margin: const EdgeInsets.only(bottom: 8),
             child: ListTile(
@@ -855,10 +957,16 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (clientName != null && clientName.isNotEmpty)
+                    Text('Cliente: $clientName'),
                   if (order.equipment != null)
                     Text('Equipamento: ${order.equipment}'),
                   if (order.model != null)
                     Text('Modelo: ${order.model}'),
+                  if (order.brand != null)
+                    Text('Marca: ${order.brand}'),
+                  if (order.serialNumber != null)
+                    Text('S/N: ${order.serialNumber}'),
                   Text(
                     'R\$ ${order.totalAmount.toStringAsFixed(2)}',
                     style: TextStyle(

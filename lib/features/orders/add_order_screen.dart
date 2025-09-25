@@ -21,6 +21,8 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
   Client? _selectedClient;
   final _equipmentController = TextEditingController();
   final _modelController = TextEditingController();
+  final _brandController = TextEditingController(); // Novo campo: Marca
+  final _serialNumberController = TextEditingController(); // Novo campo: Número de Série
   final _descriptionController = TextEditingController();
 
   final List<OrderItem> _items = [];
@@ -31,6 +33,8 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
   void dispose() {
     _equipmentController.dispose();
     _modelController.dispose();
+    _brandController.dispose(); // Novo campo
+    _serialNumberController.dispose(); // Novo campo
     _descriptionController.dispose();
     super.dispose();
   }
@@ -283,6 +287,15 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
     });
   }
 
+  void _removeItem(int index) {
+    setState(() {
+      _items.removeAt(index);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Item removido com sucesso!')),
+    );
+  }
+
   double get _totalAmount {
     return _items.fold(0.0, (sum, item) => sum + item.totalPrice);
   }
@@ -328,6 +341,8 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
         status: OrderStatus.pending,
         equipment: _equipmentController.text.trim().isEmpty ? null : _equipmentController.text.trim(),
         model: _modelController.text.trim().isEmpty ? null : _modelController.text.trim(),
+        brand: _brandController.text.trim().isEmpty ? null : _brandController.text.trim(), // Novo campo
+        serialNumber: _serialNumberController.text.trim().isEmpty ? null : _serialNumberController.text.trim(), // Novo campo
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
         totalAmount: _totalAmount,
         createdAt: DateTime.now(),
@@ -344,11 +359,15 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
 
       // Fazer upload das imagens
       if (_images.isNotEmpty) {
-        final imageUploadService = ref.read(imageUploadServiceProvider);
-        final uploadedUrls = await imageUploadService.uploadOrderImages(_images, newOrder.id);
-
-        // TODO: Salvar URLs das imagens no banco de dados
-        // Imagens enviadas: $uploadedUrls
+        try {
+          final imageUploadService = ref.read(imageUploadServiceProvider);
+          final uploadedUrls = await imageUploadService.uploadOrderImages(_images, newOrder.id);
+          // TODO: Salvar URLs das imagens no banco de dados
+          // Imagens enviadas: $uploadedUrls
+        } catch (imageError) {
+          // Log do erro mas não falha a criação da ordem
+          print('Erro ao fazer upload das imagens: $imageError');
+        }
       }
 
       if (mounted) {
@@ -536,6 +555,34 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
             ),
             const SizedBox(height: 16),
 
+            // Marca e Número de Série
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _brandController,
+                    decoration: const InputDecoration(
+                      labelText: 'Marca',
+                      hintText: 'Ex: Bosch, Makita, Stanley',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextFormField(
+                    controller: _serialNumberController,
+                    decoration: const InputDecoration(
+                      labelText: 'Número de Série',
+                      hintText: 'Ex: SN123456789',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
             // Descrição
             TextFormField(
               controller: _descriptionController,
@@ -613,7 +660,17 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                           return ListTile(
                             title: Text(item.description),
                             subtitle: Text('${item.quantity}x R\$ ${item.unitPrice.toStringAsFixed(2)}'),
-                            trailing: Text('R\$ ${item.totalPrice.toStringAsFixed(2)}'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text('R\$ ${item.totalPrice.toStringAsFixed(2)}'),
+                                IconButton(
+                                  onPressed: () => _removeItem(index),
+                                  icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                  tooltip: 'Remover Item',
+                                ),
+                              ],
+                            ),
                           );
                         },
                       ),

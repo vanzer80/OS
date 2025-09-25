@@ -75,6 +75,8 @@ class ServiceOrder {
   final OrderStatus status;
   final String? equipment;
   final String? model;
+  final String? brand; // Novo campo: Marca
+  final String? serialNumber; // Novo campo: Número de Série
   final String? description;
   final double totalAmount;
   final DateTime createdAt;
@@ -89,6 +91,8 @@ class ServiceOrder {
     required this.status,
     this.equipment,
     this.model,
+    this.brand, // Novo campo
+    this.serialNumber, // Novo campo
     this.description,
     required this.totalAmount,
     required this.createdAt,
@@ -111,6 +115,8 @@ class ServiceOrder {
       ),
       equipment: json['equipment'],
       model: json['model'],
+      brand: json['brand'], // Novo campo
+      serialNumber: json['serial_number'], // Novo campo
       description: json['description'],
       totalAmount: (json['total_amount'] as num).toDouble(),
       createdAt: DateTime.parse(json['created_at']),
@@ -127,6 +133,8 @@ class ServiceOrder {
       'status': status.name,
       'equipment': equipment,
       'model': model,
+      'brand': brand, // Novo campo
+      'serial_number': serialNumber, // Novo campo
       'description': description,
       'total_amount': totalAmount,
     };
@@ -141,6 +149,8 @@ class ServiceOrder {
     OrderStatus? status,
     String? equipment,
     String? model,
+    String? brand, // Novo campo
+    String? serialNumber, // Novo campo
     String? description,
     double? totalAmount,
     DateTime? createdAt,
@@ -155,6 +165,8 @@ class ServiceOrder {
       status: status ?? this.status,
       equipment: equipment ?? this.equipment,
       model: model ?? this.model,
+      brand: brand ?? this.brand, // Novo campo
+      serialNumber: serialNumber ?? this.serialNumber, // Novo campo
       description: description ?? this.description,
       totalAmount: totalAmount ?? this.totalAmount,
       createdAt: createdAt ?? this.createdAt,
@@ -337,22 +349,6 @@ class OrdersService {
           .eq('id', id);
     } catch (error) {
       throw Exception('Erro ao deletar item: $error');
-    }
-  }
-
-  Future<List<OrderItem>> getOrderItems(String orderId) async {
-    try {
-      final response = await _supabase
-          .from('order_items')
-          .select()
-          .eq('order_id', orderId)
-          .order('created_at', ascending: true);
-
-      return (response as List)
-          .map((json) => OrderItem.fromJson(json))
-          .toList();
-    } catch (error) {
-      throw Exception('Erro ao buscar itens da ordem: $error');
     }
   }
 
