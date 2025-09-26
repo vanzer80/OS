@@ -1038,6 +1038,13 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                   ),
                 ],
               ),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => OrderDetailsScreen(order: order),
+                  ),
+                );
+              },
             ),
           );
         },
