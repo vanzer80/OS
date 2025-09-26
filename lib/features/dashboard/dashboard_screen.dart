@@ -7,6 +7,7 @@ import '../../core/filters_service.dart';
 import '../clients/add_client_screen.dart';
 import '../orders/add_order_screen.dart';
 import '../orders/edit_order_screen.dart';
+import '../orders/order_pdf_preview_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -93,7 +94,14 @@ class HomeTab extends ConsumerWidget {
                     value: '12',
                     icon: Icons.today,
                     color: Colors.blue,
-                  ),
+                    onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => OrderPdfPreviewScreen(order: order),
+                    ),
+                  );
+                },
+              ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -136,6 +144,13 @@ class HomeTab extends ConsumerWidget {
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => OrderPdfPreviewScreen(order: order),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 16),
 
