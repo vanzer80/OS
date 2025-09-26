@@ -201,6 +201,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                       orderId: '',
                       description: description,
                       quantity: quantity,
+                      unit: 'un',
                       unitPrice: unitPrice,
                       totalPrice: quantity * unitPrice,
                       createdAt: DateTime.now(),
@@ -275,6 +276,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                   _items[index] = item.copyWith(
                     description: description,
                     quantity: quantity,
+                    unit: item.unit,
                     unitPrice: unitPrice,
                     totalPrice: quantity * unitPrice,
                   );

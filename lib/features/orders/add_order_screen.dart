@@ -216,6 +216,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                       orderId: '', // Será definido quando salvar
                       description: description,
                       quantity: quantity,
+                      unit: 'un',
                       unitPrice: unitPrice,
                       totalPrice: totalPrice,
                       createdAt: DateTime.now(),
@@ -648,6 +649,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                                   orderId: '',
                                   description: 'Teste - Troca de óleo',
                                   quantity: 1,
+                                  unit: 'un',
                                   unitPrice: 50.0,
                                   totalPrice: 50.0,
                                   createdAt: DateTime.now(),

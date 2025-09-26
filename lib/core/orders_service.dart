@@ -9,6 +9,7 @@ class OrderItem {
   final String orderId;
   final String description;
   final int quantity;
+  final String unit;
   final double unitPrice;
   final double totalPrice;
   final DateTime createdAt;
@@ -18,6 +19,7 @@ class OrderItem {
     required this.orderId,
     required this.description,
     required this.quantity,
+    required this.unit,
     required this.unitPrice,
     required this.totalPrice,
     required this.createdAt,
@@ -29,6 +31,7 @@ class OrderItem {
       orderId: json['order_id'],
       description: json['description'],
       quantity: json['quantity'],
+      unit: json['unit'] ?? 'un',
       unitPrice: (json['unit_price'] as num).toDouble(),
       totalPrice: (json['total_price'] as num).toDouble(),
       createdAt: DateTime.parse(json['created_at']),
@@ -40,6 +43,7 @@ class OrderItem {
       'order_id': orderId,
       'description': description,
       'quantity': quantity,
+      'unit': unit,
       'unit_price': unitPrice,
       'total_price': totalPrice,
     };
@@ -50,6 +54,7 @@ class OrderItem {
     String? orderId,
     String? description,
     int? quantity,
+    String? unit,
     double? unitPrice,
     double? totalPrice,
     DateTime? createdAt,
@@ -59,6 +64,7 @@ class OrderItem {
       orderId: orderId ?? this.orderId,
       description: description ?? this.description,
       quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
       unitPrice: unitPrice ?? this.unitPrice,
       totalPrice: totalPrice ?? this.totalPrice,
       createdAt: createdAt ?? this.createdAt,
@@ -78,9 +84,14 @@ class ServiceOrder {
   final String? brand; // Novo campo: Marca
   final String? serialNumber; // Novo campo: Número de Série
   final String? description;
+  final String? paymentTerms; // Condições de pagamento
+  final String? warranty; // Garantia
+  final String? observations; // Observações
   final double totalAmount;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final int? fiscalYear; // Ano fiscal
+  final int? seqPerYear; // Sequência por ano/tipo
 
   ServiceOrder({
     required this.id,
@@ -94,9 +105,14 @@ class ServiceOrder {
     this.brand, // Novo campo
     this.serialNumber, // Novo campo
     this.description,
+    this.paymentTerms,
+    this.warranty,
+    this.observations,
     required this.totalAmount,
     required this.createdAt,
     required this.updatedAt,
+    this.fiscalYear,
+    this.seqPerYear,
   });
 
   factory ServiceOrder.fromJson(Map<String, dynamic> json) {
@@ -118,9 +134,14 @@ class ServiceOrder {
       brand: json['brand'], // Novo campo
       serialNumber: json['serial_number'], // Novo campo
       description: json['description'],
+      paymentTerms: json['payment_terms'],
+      warranty: json['warranty'],
+      observations: json['observations'],
       totalAmount: (json['total_amount'] as num).toDouble(),
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
+      fiscalYear: json['fiscal_year'],
+      seqPerYear: json['seq_per_year'],
     );
   }
 
@@ -136,7 +157,12 @@ class ServiceOrder {
       'brand': brand, // Novo campo
       'serial_number': serialNumber, // Novo campo
       'description': description,
+      'payment_terms': paymentTerms,
+      'warranty': warranty,
+      'observations': observations,
       'total_amount': totalAmount,
+      'fiscal_year': fiscalYear,
+      'seq_per_year': seqPerYear,
     };
   }
 
@@ -152,9 +178,14 @@ class ServiceOrder {
     String? brand, // Novo campo
     String? serialNumber, // Novo campo
     String? description,
+    String? paymentTerms,
+    String? warranty,
+    String? observations,
     double? totalAmount,
     DateTime? createdAt,
     DateTime? updatedAt,
+    int? fiscalYear,
+    int? seqPerYear,
   }) {
     return ServiceOrder(
       id: id ?? this.id,
@@ -168,9 +199,14 @@ class ServiceOrder {
       brand: brand ?? this.brand, // Novo campo
       serialNumber: serialNumber ?? this.serialNumber, // Novo campo
       description: description ?? this.description,
+      paymentTerms: paymentTerms ?? this.paymentTerms,
+      warranty: warranty ?? this.warranty,
+      observations: observations ?? this.observations,
       totalAmount: totalAmount ?? this.totalAmount,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      fiscalYear: fiscalYear ?? this.fiscalYear,
+      seqPerYear: seqPerYear ?? this.seqPerYear,
     );
   }
 }
@@ -178,40 +214,56 @@ class ServiceOrder {
 class OrdersService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  Future<String> _generateOrderNumber() async {
+  Future<(String,int,int)> _generateNumberByTypeYear(OrderType type) async {
     try {
-      // Buscar o último número de ordem
-      final response = await _supabase
+      final now = DateTime.now();
+      final year = now.year;
+      // Buscar máximo seq_per_year para este tipo e ano
+      final resp = await _supabase
           .from('service_orders')
-          .select('order_number')
-          .order('created_at', ascending: false)
+          .select('seq_per_year')
+          .eq('type', type.name)
+          .eq('fiscal_year', year)
+          .order('seq_per_year', ascending: false)
           .limit(1);
-
-      if (response.isNotEmpty) {
-        final lastOrderNumber = response.first['order_number'] as String;
-        // Extrair o número da última ordem e incrementar
-        final lastNumber = int.tryParse(lastOrderNumber.replaceAll('OS-', '')) ?? 0;
-        return 'OS-${(lastNumber + 1).toString().padLeft(3, '0')}';
-      } else {
-        // Se não há ordens, começar com OS-001
-        return 'OS-001';
+      final lastSeq = (resp.isNotEmpty && resp.first['seq_per_year'] != null)
+          ? (resp.first['seq_per_year'] as int)
+          : 0;
+      final nextSeq = lastSeq + 1;
+      // Formatar número conforme tipo
+      final yy = year % 100;
+      String prefix;
+      switch (type) {
+        case OrderType.budget:
+          prefix = 'ORÇAMENTO Nº';
+          break;
+        case OrderType.service:
+          prefix = 'OS Nº';
+          break;
+        case OrderType.sale:
+          prefix = 'VENDA Nº';
+          break;
       }
+      final formatted = '$prefix ${nextSeq.toString().padLeft(4, '0')}-$yy';
+      return (formatted, year, nextSeq);
     } catch (error) {
-      // Em caso de erro, gerar número simples com timestamp
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      return 'OS-${timestamp.toString().substring(8)}';
+      final now = DateTime.now();
+      final yy = now.year % 100;
+      return ('OS Nº 0001-$yy', now.year, 1);
     }
   }
 
   Future<ServiceOrder> createOrder(ServiceOrder order) async {
     try {
-      // Gerar número da ordem automaticamente
-      final orderNumber = await _generateOrderNumber();
+      // Gerar número por tipo/ano
+      final (orderNumber, fiscalYear, seq) = await _generateNumberByTypeYear(order.type);
 
       final orderData = {
         ...order.toJson(),
         'order_number': orderNumber,
         'status': OrderStatus.pending.name,
+        'fiscal_year': fiscalYear,
+        'seq_per_year': seq,
       };
 
       final response = await _supabase

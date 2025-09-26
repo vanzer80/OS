@@ -9,6 +9,7 @@ import '../orders/add_order_screen.dart';
 import '../orders/edit_order_screen.dart';
 import '../orders/order_pdf_preview_screen.dart';
 import '../orders/order_details_screen.dart';
+import '../profile/company_profile_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -1125,8 +1126,29 @@ class ProfileTab extends StatelessWidget {
         title: const Text('Perfil'),
         centerTitle: true,
       ),
-      body: const Center(
-        child: Text('Perfil do Usuário - Em desenvolvimento'),
+      body: ListView(
+        children: [
+          const SizedBox(height: 8),
+          ListTile(
+            leading: const Icon(Icons.business),
+            title: const Text('Perfil da Empresa'),
+            subtitle: const Text('Dados da oficina e logotipo para PDF'),
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const CompanyProfileScreen(),
+                ),
+              );
+            },
+          ),
+          const Divider(height: 1),
+          ListTile(
+            leading: const Icon(Icons.settings),
+            title: const Text('Configurações (em breve)'),
+            subtitle: const Text('Preferências do aplicativo'),
+            onTap: () {},
+          ),
+        ],
       ),
     );
   }

@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../core/orders_service.dart';
 import '../../core/clients_service.dart';
 import '../../core/pdf_service.dart';
+import '../../core/company_profile_service.dart';
 
 class OrderPdfPreviewScreen extends ConsumerStatefulWidget {
   final ServiceOrder order;
@@ -32,14 +33,16 @@ class _OrderPdfPreviewScreenState extends ConsumerState<OrderPdfPreviewScreen> {
       final clientsService = ref.read(clientsServiceProvider);
       final ordersService = ref.read(ordersServiceProvider);
       final pdfService = ref.read(pdfServiceProvider);
+      final companyService = ref.read(companyProfileServiceProvider);
 
       Client? client;
       if (widget.order.clientId != null) {
         try { client = await clientsService.getClientById(widget.order.clientId!); } catch (_) {}
       }
       final items = await ordersService.getOrderItems(widget.order.id);
+      final profile = await companyService.getProfile();
 
-      final pdfBytes = await pdfService.buildOrderPdf(order: widget.order, client: client, items: items);
+      final pdfBytes = await pdfService.buildOrderPdf(order: widget.order, client: client, items: items, profile: profile);
       if (!mounted) return;
       setState(() {
         _pdfBytes = pdfBytes;
