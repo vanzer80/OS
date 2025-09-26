@@ -3,9 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:universal_html/html.dart' as html;
 
 import '../../core/orders_service.dart';
 import '../../core/clients_service.dart';
@@ -57,16 +55,8 @@ class _OrderPdfPreviewScreenState extends ConsumerState<OrderPdfPreviewScreen> {
   Future<void> _downloadPdf() async {
     if (_pdfBytes == null) return;
     final fileName = '${widget.order.orderNumber}.pdf';
-    if (kIsWeb) {
-      final blob = html.Blob([_pdfBytes!], 'application/pdf');
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      final anchor = html.AnchorElement(href: url)
-        ..setAttribute('download', fileName)
-        ..click();
-      html.Url.revokeObjectUrl(url);
-    } else {
-      await Printing.sharePdf(bytes: _pdfBytes!, filename: fileName);
-    }
+    // Para Web e Mobile/Desktop, o Printing.sharePdf aciona o download/compartilhar nativo
+    await Printing.sharePdf(bytes: _pdfBytes!, filename: fileName);
   }
 
   Future<void> _shareWhatsApp() async {
