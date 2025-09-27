@@ -782,56 +782,71 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                     ),
                     if (_imagesCount > 0)
                       SizedBox(
-                        height: 160,
+                        height: 200,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: _imagesCount,
                           itemBuilder: (context, index) {
                             return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Stack(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Container(
-                                    width: 120,
-                                    height: 80,
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(8),
-                                      image: DecorationImage(
-                                        image: kIsWeb
-                                            ? MemoryImage(_webImages[index])
-                                            : FileImage(_images[index]) as ImageProvider,
-                                        fit: BoxFit.cover,
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: kIsWeb
+                                            ? Image.memory(_webImages[index], width: 120, height: 90, fit: BoxFit.cover)
+                                            : Image.file(_images[index], width: 120, height: 90, fit: BoxFit.cover),
                                       ),
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: GestureDetector(
+                                          onTap: () => _removeImage(index),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.red,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 8),
+                                  SizedBox(
+                                    width: 120,
+                                    child: TextField(
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        labelText: 'Título',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                      style: const TextStyle(fontSize: 12),
+                                      onChanged: (v) {
+                                        _imageTitles[index] = v;
+                                      },
                                     ),
                                   ),
-                                  Positioned(
-                                    bottom: -72,
-                                    left: 0,
-                                    right: 0,
-                                    child: SizedBox(
-                                      width: 120,
-                                      child: Column(
-                                        children: [
-                                          TextField(
-                                            decoration: const InputDecoration(
-                                              isDense: true,
-                                              labelText: 'Título',
-                                            ),
-                                            onChanged: (v) {
-                                              _imageTitles[index] = v;
-                                            },
-                                          ),
-                                          TextField(
-                                            decoration: const InputDecoration(
-                                              isDense: true,
-                                              labelText: 'Descrição',
-                                            ),
-                                            onChanged: (v) {
-                                              _imageDescs[index] = v;
-                                            },
-                                          ),
-                                        ],
+                                  const SizedBox(height: 4),
+                                  SizedBox(
+                                    width: 120,
+                                    child: TextField(
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        labelText: 'Descrição',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                                       ),
+                                      style: const TextStyle(fontSize: 12),
+                                      onChanged: (v) {
+                                        _imageDescs[index] = v;
+                                      },
                                     ),
                                   ),
                                 ],
