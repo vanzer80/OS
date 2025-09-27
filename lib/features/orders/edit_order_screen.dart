@@ -167,7 +167,6 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
           ],
         ),
       ),
-    ),
     );
   }
 
@@ -831,6 +830,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
