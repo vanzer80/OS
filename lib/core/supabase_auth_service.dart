@@ -99,33 +99,36 @@ class SupabaseAuthService {
         serverClientId: SupabaseConfig.googleAndroidClientId,
         scopes: ['email', 'profile', 'openid'],
       );
-    
-    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-    
-    if (googleUser == null) {
-      return AuthResult(success: false, message: 'Login cancelado pelo usuário');
-    }
-    
-    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-    
-    final accessToken = googleAuth.accessToken;
-    final idToken = googleAuth.idToken;
-    
-    if (accessToken == null || idToken == null) {
-      return AuthResult(success: false, message: 'Falha ao obter tokens de autenticação');
-    }
-    
-    // Autenticar com Supabase usando os tokens do Google
-    final AuthResponse response = await _supabase.auth.signInWithIdToken(
-      provider: OAuthProvider.google,
-      idToken: idToken,
-      accessToken: accessToken,
-    );
-    
-    if (response.user != null) {
-      return AuthResult(success: true, message: 'Login com Google realizado com sucesso!');
-    } else {
-      return AuthResult(success: false, message: 'Falha na autenticação com Supabase');
+      
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        return AuthResult(success: false, message: 'Login cancelado pelo usuário');
+      }
+      
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+      
+      if (accessToken == null || idToken == null) {
+        return AuthResult(success: false, message: 'Falha ao obter tokens de autenticação');
+      }
+      
+      // Autenticar com Supabase usando os tokens do Google
+      final AuthResponse response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken,
+        accessToken: accessToken,
+      );
+      
+      if (response.user != null) {
+        return AuthResult(success: true, message: 'Login com Google realizado com sucesso!');
+      } else {
+        return AuthResult(success: false, message: 'Falha na autenticação com Supabase');
+      }
+    } catch (error) {
+      return AuthResult(success: false, message: 'Erro na autenticação mobile: $error');
     }
   }
 
