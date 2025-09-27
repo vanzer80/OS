@@ -483,7 +483,7 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 - [x] CRUD de ordens de serviço
 - [x] Sistema de itens com auto-soma
 - [x] Upload de imagens
-- [ ] Geração de PDF
+- [x] Geração de PDF
 
 ### Sprint 3 (Próximo)
 - [ ] Export PDF + WhatsApp
