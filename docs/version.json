@@ -1,6 +1,6 @@
 {
-  "versionName": "1.0.2",
-  "versionCode": 3,
-  "apkUrl": "https://github.com/vanzer80/OS/releases/download/V3/app-release.apk",
-  "changelog": "Layout da seção de imagens padronizado em TODAS as telas. Campos Título/Descrição agora ficam sempre visíveis em qualquer dispositivo móvel."
+  "versionName": "1.0.3",
+  "versionCode": 4,
+  "apkUrl": "https://github.com/vanzer80/OS/releases/download/V4/app-release.apk",
+  "changelog": "Correção do download de APK: adicionadas permissões Android necessárias e melhorado tratamento de erro com feedback visual para o usuário."
 }
