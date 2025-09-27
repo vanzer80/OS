@@ -16,7 +16,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   final _taxIdCtrl = TextEditingController();
-  final _addressCtrl = TextEditingController();
+  final _streetCtrl = TextEditingController();
+  final _streetNumberCtrl = TextEditingController();
+  final _neighborhoodCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
   final _stateCtrl = TextEditingController();
   final _zipCtrl = TextEditingController();
@@ -42,7 +44,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       if (p != null) {
         _nameCtrl.text = p.name;
         _taxIdCtrl.text = p.taxId ?? '';
-        _addressCtrl.text = p.addressLine ?? '';
+        _streetCtrl.text = p.street ?? '';
+        _streetNumberCtrl.text = p.streetNumber ?? '';
+        _neighborhoodCtrl.text = p.neighborhood ?? '';
         _cityCtrl.text = p.city ?? '';
         _stateCtrl.text = p.state ?? '';
         _zipCtrl.text = p.zip ?? '';
@@ -98,7 +102,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
         userId: userId,
         name: _nameCtrl.text.trim(),
         taxId: _taxIdCtrl.text.trim().isEmpty ? null : _taxIdCtrl.text.trim(),
-        addressLine: _addressCtrl.text.trim().isEmpty ? null : _addressCtrl.text.trim(),
+        street: _streetCtrl.text.trim().isEmpty ? null : _streetCtrl.text.trim(),
+        streetNumber: _streetNumberCtrl.text.trim().isEmpty ? null : _streetNumberCtrl.text.trim(),
+        neighborhood: _neighborhoodCtrl.text.trim().isEmpty ? null : _neighborhoodCtrl.text.trim(),
         city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
         state: _stateCtrl.text.trim().isEmpty ? null : _stateCtrl.text.trim(),
         zip: _zipCtrl.text.trim().isEmpty ? null : _zipCtrl.text.trim(),
@@ -122,7 +128,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _taxIdCtrl.dispose();
-    _addressCtrl.dispose();
+    _streetCtrl.dispose();
+    _streetNumberCtrl.dispose();
+    _neighborhoodCtrl.dispose();
     _cityCtrl.dispose();
     _stateCtrl.dispose();
     _zipCtrl.dispose();
@@ -165,9 +173,32 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    TextFormField(
-                      controller: _addressCtrl,
-                      decoration: const InputDecoration(labelText: 'Endereço (rua, número, bairro)'),
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: TextFormField(
+                            controller: _streetCtrl,
+                            decoration: const InputDecoration(labelText: 'Rua'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        SizedBox(
+                          width: 120,
+                          child: TextFormField(
+                            controller: _streetNumberCtrl,
+                            decoration: const InputDecoration(labelText: 'Número'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          flex: 2,
+                          child: TextFormField(
+                            controller: _neighborhoodCtrl,
+                            decoration: const InputDecoration(labelText: 'Bairro'),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
 

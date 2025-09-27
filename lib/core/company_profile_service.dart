@@ -6,7 +6,10 @@ class CompanyProfile {
   final String userId;
   final String name;
   final String? taxId;
-  final String? addressLine;
+  final String? addressLine; // legado
+  final String? street;
+  final String? streetNumber;
+  final String? neighborhood;
   final String? city;
   final String? state;
   final String? zip;
@@ -21,6 +24,9 @@ class CompanyProfile {
     required this.name,
     this.taxId,
     this.addressLine,
+    this.street,
+    this.streetNumber,
+    this.neighborhood,
     this.city,
     this.state,
     this.zip,
@@ -36,6 +42,9 @@ class CompanyProfile {
         name: json['name'],
         taxId: json['tax_id'],
         addressLine: json['address_line'],
+        street: json['street'],
+        streetNumber: json['street_number'],
+        neighborhood: json['neighborhood'],
         city: json['city'],
         state: json['state'],
         zip: json['zip'],
@@ -51,6 +60,9 @@ class CompanyProfile {
         'name': name,
         'tax_id': taxId,
         'address_line': addressLine,
+        'street': street,
+        'street_number': streetNumber,
+        'neighborhood': neighborhood,
         'city': city,
         'state': state,
         'zip': zip,

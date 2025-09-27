@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:printing/printing.dart';
 import 'orders_service.dart';
 import 'clients_service.dart';
 import 'company_profile_service.dart';
@@ -22,6 +23,21 @@ class PdfService {
     final total = items.fold<double>(0.0, (sum, it) => sum + it.totalPrice);
     final totalServicos = total; // alias para clareza
 
+    String joinParts(List<String?> parts) =>
+        parts.where((e) => e != null && e!.trim().isNotEmpty).map((e) => e!.trim()).join(', ');
+    final lineAddress1 = joinParts([profile?.street, profile?.streetNumber, profile?.neighborhood]);
+    final lineAddress2 = joinParts([profile?.city, profile?.state, profile?.zip]);
+
+    // Pré-carregar logo (opcional)
+    pw.ImageProvider? logoImage;
+    if ((profile?.logoUrl ?? '').isNotEmpty) {
+      try {
+        logoImage = await networkImage(profile!.logoUrl!);
+      } catch (_) {
+        logoImage = null;
+      }
+    }
+
     String titlePrefix;
     switch (order.type) {
       case OrderType.budget:
@@ -40,7 +56,7 @@ class PdfService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(24),
         build: (context) => [
-          // Header empresa
+          // Cabeçalho empresa (modelo)
           pw.Row(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -48,26 +64,50 @@ class PdfService {
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text(profile?.name ?? 'Minha Oficina', style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-                  if ((profile?.taxId ?? '').isNotEmpty) pw.Text(profile!.taxId!),
-                  if ((profile?.addressLine ?? '').isNotEmpty) pw.Text(profile!.addressLine!),
-                  if (((profile?.zip ?? '').isNotEmpty) || ((profile?.city ?? '').isNotEmpty))
-                    pw.Text('${profile?.zip ?? ''} - ${profile?.city ?? ''}/${profile?.state ?? ''}'),
+                  if (logoImage != null)
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.only(bottom: 4),
+                      child: pw.Image(logoImage, height: 36),
+                    ),
+
+                  pw.Text(
+                    profile?.name ?? 'Oficina',
+                    style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+                  ),
+                  if ((profile?.taxId ?? '').isNotEmpty)
+                    pw.Text(profile!.taxId!, style: const pw.TextStyle(fontSize: 10)),
+                  if (lineAddress1.isNotEmpty)
+                    pw.Text(lineAddress1, style: const pw.TextStyle(fontSize: 10)),
+                  if (lineAddress2.isNotEmpty)
+                    pw.Text(lineAddress2, style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  if ((profile?.phone ?? '').isNotEmpty) pw.Text('Tel.: ${profile!.phone!}'),
-                  if ((profile?.email ?? '').isNotEmpty) pw.Text(profile!.email!),
-                  if ((profile?.contactName ?? '').isNotEmpty) pw.Text('Contato: ${profile!.contactName!}'),
-                  pw.Text(_dateFmt.format(order.createdAt)),
+                  if ((profile?.phone ?? '').isNotEmpty)
+                    pw.Text('Tel.: ${profile!.phone!}', style: const pw.TextStyle(fontSize: 10)),
+                  if ((profile?.email ?? '').isNotEmpty)
+                    pw.Text(profile!.email!, style: const pw.TextStyle(fontSize: 10)),
+                  if ((profile?.contactName ?? '').isNotEmpty)
+                    pw.Text('Contato: ${profile!.contactName!}', style: const pw.TextStyle(fontSize: 10)),
                 ],
               ),
             ],
           ),
 
-          pw.SizedBox(height: 8),
+          pw.SizedBox(height: 6),
+          // Linha "Dados do Cliente" + Data à direita
+          pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text('Dados do Cliente', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Data: ${DateFormat('dd/MM/yyyy').format(order.createdAt)}', style: const pw.TextStyle(fontSize: 12)),
+            ],
+          ),
+          pw.SizedBox(height: 6),
+          pw.Divider(color: PdfColors.grey500, thickness: 1),
+          pw.SizedBox(height: 6),
 
           // Faixa título com número
           pw.Container(
