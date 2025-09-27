@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/update_service.dart';
 import '../../core/clients_service.dart';
 import '../../core/orders_service.dart';
 import '../../core/filters_service.dart';
@@ -74,6 +75,15 @@ class HomeTab extends ConsumerWidget {
         title: const Text('OS Express'),
         centerTitle: true,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.system_update_alt_outlined),
+            tooltip: 'Verificar atualização',
+            onPressed: () {
+              UpdateService(
+                versionJsonUrl: 'https://vanzer80.github.io/OS/version.json',
+              ).checkForUpdates(context);
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () {

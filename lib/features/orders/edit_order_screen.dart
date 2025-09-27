@@ -167,6 +167,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
