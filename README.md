@@ -394,6 +394,65 @@ flutter build web
 2. Deploy recomendado: Cloudflare Pages (grátis, rápido) ou Netlify/Vercel/Firebase Hosting
 3. Subdomínio no Cloudflare (`app.seudominio.com`) via CNAME para Pages
 
+## ✅ Checklist de Prontidão para Lançamento (Backend + App)
+
+- [x] Supabase: Tabelas criadas (`clients`, `service_orders`, `order_items`, `order_images`, `order_attachments`, `company_profiles`, `user_settings`)
+- [x] Supabase: RLS habilitada e políticas por usuário em todas as tabelas públicas utilizadas
+- [x] Supabase: `company_profiles` com RLS (cp_select_own, cp_insert_self, cp_update_own, cp_delete_own)
+- [x] Supabase: Bucket Storage `order-images` criado com políticas
+  - Leitura pública do bucket `order-images` (compatível com `getPublicUrl`)
+  - Insert/Update/Delete permitido apenas para usuários autenticados e owner
+- [x] Supabase: Funções com `search_path` endurecido
+  - Corrigidas: `generate_order_number`, `set_updated_at`, `update_updated_at_column`
+- [x] Auth (Android): Redirect URL adicionada no Dashboard
+  - `com.osexpresss.app.os_express_flutter://login-callback`
+- [x] App (Android): Intent-filter do deep link configurado no `AndroidManifest.xml`
+- [x] App: PDF com NotoSans + fontFallback (sem avisos Unicode) e seção "Fotos" com título/descrição
+
+Observações
+- Para maior privacidade no Storage, pode-se desabilitar leitura pública e utilizar URLs assinadas (não obrigatório no MVP).
+- Para iOS (TestFlight), adicionar o esquema iOS correspondente nas Redirect URLs quando for publicar.
+
+## 🔐 Configuração de Auth (Supabase)
+
+### Android (confirmado)
+- Dashboard → Authentication → URL Configuration → Redirect URLs → adicionar:
+  - `com.osexpresss.app.os_express_flutter://login-callback`
+- Em `AndroidManifest.xml`, manter o `intent-filter` com:
+  - `android:scheme="com.osexpresss.app.os_express_flutter"`
+  - `android:host="login-callback"`
+
+### iOS (quando publicar)
+- Dashboard → Authentication → URL Configuration → Redirect URLs → adicionar:
+  - `com.oficina.os-express://login-callback` (ajustar conforme Bundle ID)
+- Em `ios/Runner/Info.plist`:
+  - `URL Types` → `CFBundleURLSchemes`: `com.oficina.os-express`
+
+## 🔏 Guia Rápido de Assinatura e Build (Android)
+
+1) Gerar Keystore (Windows PowerShell)
+```powershell
+keytool -genkey -v -keystore C:\\keys\\os_express.keystore -alias os_express -keyalg RSA -keysize 2048 -validity 10000
+```
+
+2) Criar `android/key.properties`
+```properties
+storePassword=SUASENHA
+keyPassword=SUASENHA
+keyAlias=os_express
+storeFile=C:\\keys\\os_express.keystore
+```
+
+3) Build de Release
+```bash
+flutter build appbundle --release
+flutter build apk --release
+```
+
+4) Saídas
+- AAB: `build/app/outputs/bundle/release/app-release.aab`
+- APK: `build/app/outputs/flutter-apk/app-release.apk`
+
 ## 🤝 Contribuição
 
 1. Fork o projeto
