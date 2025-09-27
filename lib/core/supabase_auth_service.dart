@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'supabase_config.dart';
 
 // Serviço de autenticação real com Supabase
@@ -76,20 +77,28 @@ class SupabaseAuthService {
   }
 
   Future<AuthResult> _signInWithGoogleWeb() async {
-    // Para Web: usar OAuth redirect do Supabase
-    await _supabase.auth.signInWithOAuth(
-      OAuthProvider.google,
-      redirectTo: kIsWeb ? null : '${SupabaseConfig.supabaseUrl}/auth/v1/callback',
-    );
-    return AuthResult(success: true, message: 'Redirecionando para Google...');
+    try {
+      // Para Web: usar OAuth redirect do Supabase
+      await _supabase.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: SupabaseConfig.authCallbackUrl,
+        authScreenLaunchMode: LaunchMode.platformDefault,
+      );
+      
+      // No web, o usuário será redirecionado, então retornamos sucesso
+      return AuthResult(success: true, message: 'Redirecionando para Google...');
+    } catch (error) {
+      return AuthResult(success: false, message: 'Erro na autenticação web: $error');
+    }
   }
 
   Future<AuthResult> _signInWithGoogleMobile() async {
-    // Configurar Google Sign In para Mobile
-    final GoogleSignIn googleSignIn = GoogleSignIn(
-      serverClientId: '77408990333-up512fsnj0tdmk9ru2osev3utn39o6p0.apps.googleusercontent.com',
-      scopes: ['email', 'profile'],
-    );
+    try {
+      // Configurar Google Sign In para Mobile
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        serverClientId: SupabaseConfig.googleAndroidClientId,
+        scopes: ['email', 'profile', 'openid'],
+      );
     
     final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
     

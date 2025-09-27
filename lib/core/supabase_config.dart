@@ -11,4 +11,12 @@ class SupabaseConfig {
   static const int maxImageSize = 5 * 1024 * 1024; // 5MB
   static const List<String> allowedImageTypes = ['jpg', 'jpeg', 'png', 'webp'];
   static const int maxImagesPerOrder = 5;
+  
+  // Configurações Google OAuth
+  // IMPORTANTE: Estes são os Client IDs que você deve obter do Google Cloud Console
+  static const String googleWebClientId = 'SEU_WEB_CLIENT_ID_AQUI.apps.googleusercontent.com';
+  static const String googleAndroidClientId = 'SEU_ANDROID_CLIENT_ID_AQUI.apps.googleusercontent.com';
+  
+  // URLs de redirecionamento
+  static String get authCallbackUrl => '$supabaseUrl/auth/v1/callback';
 }
