@@ -17,6 +17,8 @@ class PdfService {
     required Client? client,
     required List<OrderItem> items,
     required CompanyProfile? profile,
+    List<String> imageUrls = const [],
+    List<OrderImageRecord> imageRecords = const [],
   }) async {
     final pdf = pw.Document();
 
@@ -35,6 +37,24 @@ class PdfService {
         logoImage = await networkImage(profile!.logoUrl!);
       } catch (_) {
         logoImage = null;
+      }
+    }
+
+    // Pré-carregar imagens da ordem (máx 5)
+    final List<({pw.ImageProvider img, String? title, String? desc})> orderImages = [];
+    if (imageRecords.isNotEmpty) {
+      for (final rec in imageRecords.take(5)) {
+        try {
+          final img = await networkImage(rec.url);
+          orderImages.add((img: img, title: rec.title, desc: rec.description));
+        } catch (_) {}
+      }
+    } else {
+      for (final url in imageUrls.take(5)) {
+        try {
+          final img = await networkImage(url);
+          orderImages.add((img: img, title: null, desc: null));
+        } catch (_) {}
       }
     }
 
@@ -248,6 +268,53 @@ class PdfService {
               ),
             ],
           ),
+
+          // Seção de Fotos no final, antes da assinatura
+          if (orderImages.isNotEmpty) ...[
+            pw.SizedBox(height: 12),
+            pw.Divider(color: PdfColors.grey500, thickness: 1),
+            pw.SizedBox(height: 6),
+            pw.Text('Fotos', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              columnWidths: const {
+                0: pw.FlexColumnWidth(1),
+                1: pw.FlexColumnWidth(1),
+                2: pw.FlexColumnWidth(1),
+              },
+              children: [
+                for (var i = 0; i < orderImages.length; i += 3)
+                  pw.TableRow(
+                    children: [
+                      for (var j = 0; j < 3; j++)
+                        if (i + j < orderImages.length)
+                          pw.Padding(
+                            padding: const pw.EdgeInsets.only(bottom: 10, right: 7),
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Container(
+                                  height: 120,
+                                  decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300)),
+                                  child: pw.FittedBox(child: pw.Image(orderImages[i + j].img)),
+                                ),
+                                if (((orderImages[i + j].title) ?? '').isNotEmpty)
+                                  pw.Padding(
+                                    padding: const pw.EdgeInsets.only(top: 4),
+                                    child: pw.Text(orderImages[i + j].title!, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                                  ),
+                                if (((orderImages[i + j].desc) ?? '').isNotEmpty)
+                                  pw.Text(orderImages[i + j].desc!, style: const pw.TextStyle(fontSize: 9)),
+                              ],
+                            ),
+                          )
+                        else
+                          pw.Container(),
+                    ],
+                  ),
+              ],
+            ),
+          ],
 
           pw.SizedBox(height: 40),
           pw.Center(

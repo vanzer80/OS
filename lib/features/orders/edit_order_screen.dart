@@ -31,12 +31,35 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
   final List<OrderItem> _items = [];
   final List<File> _images = [];
   final List<Uint8List> _webImages = [];
+  final List<OrderImageRecord> _persistedRecords = [];
+  final List<String> _persistedTitles = [];
+  final List<String> _persistedDescs = [];
+  final List<String> _newTitles = [];
+  final List<String> _newDescs = [];
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
     _initializeForm();
+  }
+
+  Future<void> _loadOrderImages() async {
+    try {
+      final records = await ref.read(ordersServiceProvider).getOrderImages(widget.order.id);
+      if (!mounted) return;
+      setState(() {
+        _persistedRecords
+          ..clear()
+          ..addAll(records);
+        _persistedTitles
+          ..clear()
+          ..addAll(records.map((e) => e.title ?? ''));
+        _persistedDescs
+          ..clear()
+          ..addAll(records.map((e) => e.description ?? ''));
+      });
+    } catch (_) {}
   }
 
   void _initializeForm() {
@@ -48,6 +71,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
     _descriptionController.text = widget.order.description ?? '';
     _loadClient();
     _loadOrderItems();
+    _loadOrderImages();
   }
 
   Future<void> _loadClient() async {
@@ -291,10 +315,11 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
     );
   }
 
-  int get _imagesCount => kIsWeb ? _webImages.length : _images.length;
+  int get _localImagesCount => kIsWeb ? _webImages.length : _images.length;
+  int get _totalImagesCount => _persistedRecords.length + _localImagesCount;
 
   Future<void> _pickImages() async {
-    if (_imagesCount >= 5) {
+    if (_totalImagesCount >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Máximo de 5 imagens permitido')),
       );
@@ -308,7 +333,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
       imageQuality: 85,
     );
 
-    if (pickedFiles.length + _imagesCount > 5) {
+    if (pickedFiles.length + _totalImagesCount > 5) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Selecione no máximo 5 imagens')),
@@ -322,16 +347,20 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
       final bytesList = await Future.wait(futures);
       setState(() {
         _webImages.addAll(bytesList);
+        _newTitles.addAll(List.filled(bytesList.length, ''));
+        _newDescs.addAll(List.filled(bytesList.length, ''));
       });
     } else {
       setState(() {
         _images.addAll(pickedFiles.map((file) => File(file.path)));
+        _newTitles.addAll(List.filled(pickedFiles.length, ''));
+        _newDescs.addAll(List.filled(pickedFiles.length, ''));
       });
     }
   }
 
   Future<void> _takePhoto() async {
-    if (_imagesCount >= 5) {
+    if (_totalImagesCount >= 5) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Máximo de 5 imagens permitido')),
       );
@@ -351,10 +380,14 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
         final bytes = await photo.readAsBytes();
         setState(() {
           _webImages.add(bytes);
+          _newTitles.add('');
+          _newDescs.add('');
         });
       } else {
         setState(() {
           _images.add(File(photo.path));
+          _newTitles.add('');
+          _newDescs.add('');
         });
       }
     }
@@ -364,8 +397,12 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
     setState(() {
       if (kIsWeb) {
         _webImages.removeAt(index);
+        if (index < _newTitles.length) _newTitles.removeAt(index);
+        if (index < _newDescs.length) _newDescs.removeAt(index);
       } else {
         _images.removeAt(index);
+        if (index < _newTitles.length) _newTitles.removeAt(index);
+        if (index < _newDescs.length) _newDescs.removeAt(index);
       }
     });
   }
@@ -419,28 +456,68 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
         await ref.read(ordersServiceProvider).createOrderItem(orderItem);
       }
 
-      if (_imagesCount > 0) {
+      // Imagens: atualizar metadados mesmo sem novas imagens; se houver novas, combinar
+      if (_localImagesCount > 0) {
         try {
           final imageUploadService = ref.read(imageUploadServiceProvider);
-          if (kIsWeb) {
-            await imageUploadService.uploadOrderImagesBytes(_webImages, widget.order.id);
-          } else {
-            await imageUploadService.uploadOrderImages(_images, widget.order.id);
+          final ordersSvc = ref.read(ordersServiceProvider);
+          // Buscar já persistidas com meta
+          final existingRecords = await ordersSvc.getOrderImages(widget.order.id);
+          // Enviar imagens e obter URLs públicas
+          final uploadedUrls = kIsWeb
+              ? await imageUploadService.uploadOrderImagesBytes(_webImages, widget.order.id)
+              : await imageUploadService.uploadOrderImages(_images, widget.order.id);
+          // Atualizar metadados editados das persistidas
+          final updatedExisting = <OrderImageRecord>[];
+          for (var i = 0; i < existingRecords.length; i++) {
+            final rec = existingRecords[i];
+            final title = i < _persistedTitles.length ? (_persistedTitles[i].trim().isEmpty ? null : _persistedTitles[i].trim()) : rec.title;
+            final desc = i < _persistedDescs.length ? (_persistedDescs[i].trim().isEmpty ? null : _persistedDescs[i].trim()) : rec.description;
+            updatedExisting.add(OrderImageRecord(url: rec.url, position: i, title: title, description: desc));
           }
-        } catch (imageError) {
-          // Não bloquear a atualização por erro de upload
-          // ignore: avoid_print
-          print('Erro ao fazer upload das imagens: $imageError');
-        }
-      }
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ordem ${_selectedType.name == 'service' ? 'de Serviço' : _selectedType.name == 'budget' ? 'de Orçamento' : 'de Venda'} atualizada com sucesso!'),
-          ),
-        );
-        Navigator.of(context).pop(updatedOrder);
+          // Converter novas imagens para records (com meta capturada nesta tela)
+          final newRecords = <OrderImageRecord>[];
+          for (var i = 0; i < uploadedUrls.length; i++) {
+            final t = i < _newTitles.length ? (_newTitles[i].trim().isEmpty ? null : _newTitles[i].trim()) : null;
+            final d = i < _newDescs.length ? (_newDescs[i].trim().isEmpty ? null : _newDescs[i].trim()) : null;
+            newRecords.add(OrderImageRecord(url: uploadedUrls[i], position: updatedExisting.length + i, title: t, description: d));
+          }
+
+          final allRecords = [...updatedExisting, ...newRecords];
+          await ordersSvc.deleteImagesForOrder(widget.order.id);
+          await ordersSvc.addOrderImagesWithMeta(widget.order.id, allRecords);
+          // Limpar buffers locais e recarregar persistidas
+          setState(() {
+            _webImages.clear();
+            _images.clear();
+            _newTitles.clear();
+            _newDescs.clear();
+          });
+          await _loadOrderImages();
+        } catch (imageError) {
+          // ignore: avoid_print
+          print('Erro ao atualizar imagens: $imageError');
+        }
+      } else {
+        // Sem novas imagens: apenas atualizar metadados das existentes
+        try {
+          final ordersSvc = ref.read(ordersServiceProvider);
+          final existingRecords = await ordersSvc.getOrderImages(widget.order.id);
+          final updatedExisting = <OrderImageRecord>[];
+          for (var i = 0; i < existingRecords.length; i++) {
+            final rec = existingRecords[i];
+            final title = i < _persistedTitles.length ? (_persistedTitles[i].trim().isEmpty ? null : _persistedTitles[i].trim()) : rec.title;
+            final desc = i < _persistedDescs.length ? (_persistedDescs[i].trim().isEmpty ? null : _persistedDescs[i].trim()) : rec.description;
+            updatedExisting.add(OrderImageRecord(url: rec.url, position: i, title: title, description: desc));
+          }
+          await ordersSvc.deleteImagesForOrder(widget.order.id);
+          await ordersSvc.addOrderImagesWithMeta(widget.order.id, updatedExisting);
+          await _loadOrderImages();
+        } catch (imageError) {
+          // ignore: avoid_print
+          print('Erro ao atualizar metadados das imagens: $imageError');
+        }
       }
     } catch (error) {
       if (mounted) {
@@ -635,7 +712,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('Imagens (${_imagesCount}/5)', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('Imagens (${_totalImagesCount}/5)', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         Row(
                           children: [
                             IconButton(onPressed: _takePhoto, icon: const Icon(Icons.camera_alt), tooltip: 'Tirar Foto'),
@@ -644,43 +721,93 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                         ),
                       ],
                     ),
-                    if (_imagesCount > 0)
+                    if (_persistedRecords.isNotEmpty) ...[
+                      const SizedBox(height: 8),
                       SizedBox(
-                        height: 100,
+                        height: 180,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _imagesCount,
+                          itemCount: _persistedRecords.length,
                           itemBuilder: (context, index) {
+                            final rec = _persistedRecords[index];
                             return Padding(
-                              padding: const EdgeInsets.only(right: 8),
-                              child: Stack(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
-                                    child: kIsWeb
-                                        ? Image.memory(
-                                            _webImages[index],
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                          )
-                                        : Image.file(
-                                            _images[index],
-                                            width: 100,
-                                            height: 100,
-                                            fit: BoxFit.cover,
-                                          ),
+                                    child: Image.network(rec.url, width: 120, height: 90, fit: BoxFit.cover),
                                   ),
-                                  Positioned(
-                                    top: 4,
-                                    right: 4,
-                                    child: GestureDetector(
-                                      onTap: () => _removeImage(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(4),
-                                        decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                        child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                  SizedBox(
+                                    width: 120,
+                                    child: TextField(
+                                      decoration: const InputDecoration(isDense: true, labelText: 'Título'),
+                                      controller: TextEditingController(text: _persistedTitles[index]),
+                                      onChanged: (v) => _persistedTitles[index] = v,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 120,
+                                    child: TextField(
+                                      decoration: const InputDecoration(isDense: true, labelText: 'Descrição'),
+                                      controller: TextEditingController(text: _persistedDescs[index]),
+                                      onChanged: (v) => _persistedDescs[index] = v,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                    if (_localImagesCount > 0)
+                      SizedBox(
+                        height: 180,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _localImagesCount,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Stack(
+                                    children: [
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(8),
+                                        child: kIsWeb
+                                            ? Image.memory(_webImages[index], width: 120, height: 90, fit: BoxFit.cover)
+                                            : Image.file(_images[index], width: 120, height: 90, fit: BoxFit.cover),
                                       ),
+                                      Positioned(
+                                        top: 4,
+                                        right: 4,
+                                        child: GestureDetector(
+                                          onTap: () => _removeImage(index),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                            child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(
+                                    width: 120,
+                                    child: TextField(
+                                      decoration: const InputDecoration(isDense: true, labelText: 'Título'),
+                                      onChanged: (v) => _newTitles[index] = v,
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 120,
+                                    child: TextField(
+                                      decoration: const InputDecoration(isDense: true, labelText: 'Descrição'),
+                                      onChanged: (v) => _newDescs[index] = v,
                                     ),
                                   ),
                                 ],

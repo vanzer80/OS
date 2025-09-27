@@ -42,8 +42,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
         try { client = await clientsSvc.getClientById(widget.order.clientId!); } catch (_) {}
       }
       final items = await ordersSvc.getOrderItems(widget.order.id);
+      final imageRecords = await ordersSvc.getOrderImages(widget.order.id);
       final profile = await companySvc.getProfile();
-      final pdf = await pdfSvc.buildOrderPdf(order: widget.order, client: client, items: items, profile: profile);
+      final pdf = await pdfSvc.buildOrderPdf(order: widget.order, client: client, items: items, profile: profile, imageUrls: const [], imageRecords: imageRecords);
 
       if (!mounted) return;
       setState(() {

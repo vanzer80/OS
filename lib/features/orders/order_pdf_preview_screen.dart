@@ -40,9 +40,17 @@ class _OrderPdfPreviewScreenState extends ConsumerState<OrderPdfPreviewScreen> {
         try { client = await clientsService.getClientById(widget.order.clientId!); } catch (_) {}
       }
       final items = await ordersService.getOrderItems(widget.order.id);
+      final imageRecords = await ordersService.getOrderImages(widget.order.id);
       final profile = await companyService.getProfile();
 
-      final pdfBytes = await pdfService.buildOrderPdf(order: widget.order, client: client, items: items, profile: profile);
+      final pdfBytes = await pdfService.buildOrderPdf(
+        order: widget.order,
+        client: client,
+        items: items,
+        profile: profile,
+        imageUrls: const [],
+        imageRecords: imageRecords,
+      );
       if (!mounted) return;
       setState(() {
         _pdfBytes = pdfBytes;

@@ -4,6 +4,35 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 enum OrderType { service, budget, sale }
 enum OrderStatus { pending, inProgress, completed, cancelled }
 
+class OrderImageRecord {
+  final String url;
+  final String? title;
+  final String? description;
+  final int position;
+
+  OrderImageRecord({
+    required this.url,
+    required this.position,
+    this.title,
+    this.description,
+  });
+
+  factory OrderImageRecord.fromJson(Map<String, dynamic> json) => OrderImageRecord(
+        url: json['url'],
+        position: json['position'] ?? 0,
+        title: json['title'],
+        description: json['description'],
+      );
+
+  Map<String, dynamic> toRow(String orderId) => {
+        'order_id': orderId,
+        'url': url,
+        'title': title,
+        'description': description,
+        'position': position,
+      };
+}
+
 class OrderItem {
   final String id;
   final String orderId;
@@ -37,6 +66,8 @@ class OrderItem {
       createdAt: DateTime.parse(json['created_at']),
     );
   }
+
+  
 
   Map<String, dynamic> toJson() {
     return {
@@ -402,6 +433,100 @@ class OrdersService {
           .eq('order_id', orderId);
     } catch (error) {
       throw Exception('Erro ao excluir itens da ordem: $error');
+    }
+  }
+
+  // ===================== Imagens da Ordem =====================
+  Future<void> deleteImagesForOrder(String orderId) async {
+    try {
+      await _supabase.from('order_images').delete().eq('order_id', orderId);
+    } catch (error) {
+      throw Exception('Erro ao excluir imagens da ordem: $error');
+    }
+  }
+
+  Future<void> addOrderImages(String orderId, List<String> urls) async {
+    if (urls.isEmpty) return;
+    try {
+      final rows = <Map<String, dynamic>>[];
+      for (var i = 0; i < urls.length; i++) {
+        rows.add({
+          'order_id': orderId,
+          'url': urls[i],
+          'position': i,
+        });
+      }
+      await _supabase.from('order_images').insert(rows);
+    } catch (error) {
+      throw Exception('Erro ao salvar imagens da ordem: $error');
+    }
+  }
+
+  Future<void> addOrderImagesWithMeta(String orderId, List<OrderImageRecord> records) async {
+    if (records.isEmpty) return;
+    try {
+      final rows = records.map((r) => r.toRow(orderId)).toList();
+      await _supabase.from('order_images').insert(rows);
+    } catch (error) {
+      throw Exception('Erro ao salvar imagens da ordem (meta): $error');
+    }
+  }
+
+  Future<List<String>> getOrderImageUrls(String orderId) async {
+    try {
+      final response = await _supabase
+          .from('order_images')
+          .select('url, position')
+          .eq('order_id', orderId)
+          .order('position', ascending: true);
+      final urls = (response as List).map((e) => (e['url'] as String)).toList();
+      if (urls.isNotEmpty) return urls;
+
+      // Fallback: listar do Storage caso a tabela esteja vazia (compatibilidade)
+      try {
+        final files = await _supabase.storage.from('order-images').list(path: 'orders/$orderId');
+        return files
+            .where((f) => !(f.name.startsWith('.') || f.name.isEmpty))
+            .map((f) => _supabase.storage
+                .from('order-images')
+                .getPublicUrl('orders/$orderId/${f.name}'))
+            .toList();
+      } catch (_) {
+        return urls; // continua vazio
+      }
+    } catch (error) {
+      throw Exception('Erro ao buscar imagens da ordem: $error');
+    }
+  }
+
+  Future<List<OrderImageRecord>> getOrderImages(String orderId) async {
+    try {
+      final response = await _supabase
+          .from('order_images')
+          .select('url, title, description, position')
+          .eq('order_id', orderId)
+          .order('position', ascending: true);
+      final rows = (response as List).map((e) => OrderImageRecord.fromJson(e)).toList();
+      if (rows.isNotEmpty) return rows;
+
+      // Fallback: listar do Storage sem meta
+      try {
+        final files = await _supabase.storage.from('order-images').list(path: 'orders/$orderId');
+        return files
+            .where((f) => !(f.name.startsWith('.') || f.name.isEmpty))
+            .toList()
+            .asMap()
+            .entries
+            .map((entry) => OrderImageRecord(
+                  url: _supabase.storage.from('order-images').getPublicUrl('orders/$orderId/${entry.value.name}'),
+                  position: entry.key,
+                ))
+            .toList();
+      } catch (_) {
+        return rows; // vazio
+      }
+    } catch (error) {
+      throw Exception('Erro ao buscar imagens da ordem (meta): $error');
     }
   }
 

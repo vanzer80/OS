@@ -30,6 +30,8 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
   final List<OrderItem> _items = [];
   final List<File> _images = [];
   final List<Uint8List> _webImages = [];
+  final List<String> _imageTitles = [];
+  final List<String> _imageDescs = [];
   bool _isLoading = false;
 
   @override
@@ -263,10 +265,14 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
       final bytesList = await Future.wait(pickedFiles.map((xf) => xf.readAsBytes()));
       setState(() {
         _webImages.addAll(bytesList);
+        _imageTitles.addAll(List.filled(bytesList.length, ''));
+        _imageDescs.addAll(List.filled(bytesList.length, ''));
       });
     } else {
       setState(() {
         _images.addAll(pickedFiles.map((file) => File(file.path)));
+        _imageTitles.addAll(List.filled(pickedFiles.length, ''));
+        _imageDescs.addAll(List.filled(pickedFiles.length, ''));
       });
     }
   }
@@ -305,8 +311,12 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
     setState(() {
       if (kIsWeb) {
         _webImages.removeAt(index);
+        _imageTitles.removeAt(index);
+        _imageDescs.removeAt(index);
       } else {
         _images.removeAt(index);
+        _imageTitles.removeAt(index);
+        _imageDescs.removeAt(index);
       }
     });
   }
@@ -388,8 +398,17 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
           final uploadedUrls = kIsWeb
               ? await imageUploadService.uploadOrderImagesBytes(_webImages, newOrder.id)
               : await imageUploadService.uploadOrderImages(_images, newOrder.id);
-          // TODO: Salvar URLs das imagens no banco de dados
-          // Imagens enviadas: $uploadedUrls
+          // Persistir URLs com título/descrição no banco de dados
+          final records = <OrderImageRecord>[];
+          for (var i = 0; i < uploadedUrls.length; i++) {
+            records.add(OrderImageRecord(
+              url: uploadedUrls[i],
+              position: i,
+              title: i < _imageTitles.length ? (_imageTitles[i].trim().isEmpty ? null : _imageTitles[i].trim()) : null,
+              description: i < _imageDescs.length ? (_imageDescs[i].trim().isEmpty ? null : _imageDescs[i].trim()) : null,
+            ));
+          }
+          await ref.read(ordersServiceProvider).addOrderImagesWithMeta(newOrder.id, records);
         } catch (imageError) {
           // Log do erro mas não falha a criação da ordem
           print('Erro ao fazer upload das imagens: $imageError');
@@ -739,7 +758,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Imagens (${_images.length}/5)',
+                          'Imagens (${_imagesCount}/5)',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -761,44 +780,57 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                         ),
                       ],
                     ),
-                    if (_images.isNotEmpty)
+                    if (_imagesCount > 0)
                       SizedBox(
-                        height: 100,
+                        height: 160,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _images.length,
+                          itemCount: _imagesCount,
                           itemBuilder: (context, index) {
                             return Padding(
                               padding: const EdgeInsets.only(right: 8),
                               child: Stack(
                                 children: [
                                   Container(
-                                    width: 80,
+                                    width: 120,
                                     height: 80,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
                                       image: DecorationImage(
-                                        image: FileImage(_images[index]),
+                                        image: kIsWeb
+                                            ? MemoryImage(_webImages[index])
+                                            : FileImage(_images[index]) as ImageProvider,
                                         fit: BoxFit.cover,
                                       ),
                                     ),
                                   ),
                                   Positioned(
-                                    top: 4,
-                                    right: 4,
-                                    child: GestureDetector(
-                                      onTap: () => _removeImage(index),
-                                      child: Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.red,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.close,
-                                          size: 12,
-                                          color: Colors.white,
-                                        ),
+                                    bottom: -72,
+                                    left: 0,
+                                    right: 0,
+                                    child: SizedBox(
+                                      width: 120,
+                                      child: Column(
+                                        children: [
+                                          TextField(
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              labelText: 'Título',
+                                            ),
+                                            onChanged: (v) {
+                                              _imageTitles[index] = v;
+                                            },
+                                          ),
+                                          TextField(
+                                            decoration: const InputDecoration(
+                                              isDense: true,
+                                              labelText: 'Descrição',
+                                            ),
+                                            onChanged: (v) {
+                                              _imageDescs[index] = v;
+                                            },
+                                          ),
+                                        ],
                                       ),
                                     ),
                                   ),
@@ -808,6 +840,8 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                           },
                         ),
                       ),
+                    
+                    const SizedBox(height: 16),
                   ],
                 ),
               ),
