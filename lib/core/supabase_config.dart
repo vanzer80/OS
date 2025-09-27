@@ -13,9 +13,8 @@ class SupabaseConfig {
   static const int maxImagesPerOrder = 5;
   
   // Configurações Google OAuth
-  // IMPORTANTE: Estes são os Client IDs que você deve obter do Google Cloud Console
-  static const String googleWebClientId = 'SEU_WEB_CLIENT_ID_AQUI.apps.googleusercontent.com';
-  static const String googleAndroidClientId = 'SEU_ANDROID_CLIENT_ID_AQUI.apps.googleusercontent.com';
+  static const String googleWebClientId = '77408990333-dn38l5utt4f2artjn27o0kdfqtgq3cvd.apps.googleusercontent.com';
+  static const String googleAndroidClientId = '77408990333-up512fsnj0tdmk9ru2osev3utn39o6p0.apps.googleusercontent.com';
   
   // URLs de redirecionamento
   static String get authCallbackUrl => '$supabaseUrl/auth/v1/callback';

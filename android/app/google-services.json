@@ -1,1 +1,43 @@
-{"installed":{"client_id":"77408990333-up512fsnj0tdmk9ru2osev3utn39o6p0.apps.googleusercontent.com","project_id":"os-express-app","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs"}}
+{
+  "project_info": {
+    "project_number": "77408990333",
+    "project_id": "os-express-app",
+    "storage_bucket": "os-express-app.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:77408990333:android:abc123def456",
+        "android_client_info": {
+          "package_name": "com.osexpresss.app.os_express_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "77408990333-up512fsnj0tdmk9ru2osev3utn39o6p0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.osexpresss.app.os_express_flutter",
+            "certificate_hash": "7ee74299cc9c0661b2cd4e5d4e82fb8b9d7d493e"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDummyKeyForAndroidApp123456789"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "77408990333-dn38l5utt4f2artjn27o0kdfqtgq3cvd.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
