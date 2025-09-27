@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:pdf/google_fonts.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
 import 'orders_service.dart';
@@ -20,7 +21,15 @@ class PdfService {
     List<String> imageUrls = const [],
     List<OrderImageRecord> imageRecords = const [],
   }) async {
-    final pdf = pw.Document();
+    // Fonts: NotoSans with fallback to cover Unicode (e.g., em dash)
+    final baseFont = await PdfGoogleFonts.notoSansRegular();
+    final boldFont = await PdfGoogleFonts.notoSansBold();
+    final theme = pw.ThemeData.withFont(
+      base: baseFont,
+      bold: boldFont,
+      fontFallback: [baseFont],
+    );
+    final pdf = pw.Document(theme: theme);
 
     final total = items.fold<double>(0.0, (sum, it) => sum + it.totalPrice);
     final totalServicos = total; // alias para clareza
