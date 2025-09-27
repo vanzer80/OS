@@ -186,15 +186,19 @@ uuid: ^4.5.1                     # Geração de IDs
 ### 🔄 **Funcionalidades em Desenvolvimento**
 
 #### 7. Geração de PDF
-- [ ] Layout profissional para ordens
-- [ ] Inclusão de logo da empresa
-- [ ] Dados do cliente e itens
-- [ ] Totais e informações fiscais
+- [x] Layout profissional para ordens
+- [x] Inclusão de logo da empresa (quando configurado)
+- [x] Dados do cliente, equipamento, itens e totais
+- [x] Seção "Fotos" no final com 3 colunas
+- [x] Títulos e descrições por imagem no PDF
+- [x] Fonte NotoSans embutida com `fontFallback` (Unicode seguro, sem warnings)
 
 #### 8. Exportação e Compartilhamento
-- [ ] Export PDF via WhatsApp
-- [ ] Compartilhamento por email
-- [ ] Impressão direta
+- [x] Visualizar/baixar PDF
+- [x] Compartilhar PDF (Share Sheet do sistema)
+- [ ] Compartilhar direto no WhatsApp (atalho dedicado)
+- [ ] Envio por email com template
+- [ ] Impressão direta (integração avançada)
 - [ ] Histórico de exportações
 
 #### 9. Configurações Avançadas
@@ -387,7 +391,8 @@ flutter build web
 
 ### Web
 1. Execute `flutter build web`
-2. Deploy no Netlify/Vercel/Firebase Hosting
+2. Deploy recomendado: Cloudflare Pages (grátis, rápido) ou Netlify/Vercel/Firebase Hosting
+3. Subdomínio no Cloudflare (`app.seudominio.com`) via CNAME para Pages
 
 ## 🤝 Contribuição
 
@@ -447,4 +452,4 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 
 **Desenvolvido com ❤️ para modernizar oficinas mecânicas e prestadores de serviços.**
 
-*Última atualização: 24 de Setembro de 2024*
+*Última atualização: 27 de Setembro de 2025*
