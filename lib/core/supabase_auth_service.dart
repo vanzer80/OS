@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'supabase_config.dart';
 
 // Serviço de autenticação real com Supabase
 class SupabaseAuthService {
@@ -58,8 +60,39 @@ class SupabaseAuthService {
 
   Future<AuthResult> signInWithGoogle() async {
     try {
-      await _supabase.auth.signInWithOAuth(OAuthProvider.google);
-      return AuthResult(success: true, message: 'Login com Google realizado com sucesso!');
+      // Configurar Google Sign In
+      final GoogleSignIn googleSignIn = GoogleSignIn(
+        // O serverClientId será obtido do google-services.json automaticamente
+        scopes: ['email', 'profile'],
+      );
+      
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      
+      if (googleUser == null) {
+        return AuthResult(success: false, message: 'Login cancelado pelo usuário');
+      }
+      
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      
+      final accessToken = googleAuth.accessToken;
+      final idToken = googleAuth.idToken;
+      
+      if (accessToken == null) {
+        return AuthResult(success: false, message: 'Falha ao obter token de acesso');
+      }
+      
+      // Autenticar com Supabase usando os tokens do Google
+      final AuthResponse response = await _supabase.auth.signInWithIdToken(
+        provider: OAuthProvider.google,
+        idToken: idToken!,
+        accessToken: accessToken,
+      );
+      
+      if (response.user != null) {
+        return AuthResult(success: true, message: 'Login com Google realizado com sucesso!');
+      } else {
+        return AuthResult(success: false, message: 'Falha na autenticação com Supabase');
+      }
     } on AuthException catch (error) {
       return AuthResult(success: false, message: error.message);
     } catch (error) {

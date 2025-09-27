@@ -65,9 +65,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Simulação de login com Google para desenvolvimento
-      await Future.delayed(const Duration(seconds: 1));
-      
       final result = await ref.read(supabaseAuthStateProvider.notifier).signInWithGoogle();
 
       if (mounted) {
