@@ -731,7 +731,7 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                     if (_persistedRecords.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       SizedBox(
-                        height: 180,
+                        height: 200,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: _persistedRecords.length,
@@ -746,18 +746,32 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                                     borderRadius: BorderRadius.circular(8),
                                     child: Image.network(rec.url, width: 120, height: 90, fit: BoxFit.cover),
                                   ),
+                                  const SizedBox(height: 8),
                                   SizedBox(
                                     width: 120,
                                     child: TextField(
-                                      decoration: const InputDecoration(isDense: true, labelText: 'Título'),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        labelText: 'Título',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                      style: const TextStyle(fontSize: 12),
                                       controller: TextEditingController(text: _persistedTitles[index]),
                                       onChanged: (v) => _persistedTitles[index] = v,
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
                                   SizedBox(
                                     width: 120,
                                     child: TextField(
-                                      decoration: const InputDecoration(isDense: true, labelText: 'Descrição'),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        labelText: 'Descrição',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                      style: const TextStyle(fontSize: 12),
                                       controller: TextEditingController(text: _persistedDescs[index]),
                                       onChanged: (v) => _persistedDescs[index] = v,
                                     ),
@@ -771,13 +785,13 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                     ],
                     if (_localImagesCount > 0)
                       SizedBox(
-                        height: 180,
+                        height: 200,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: _localImagesCount,
                           itemBuilder: (context, index) {
                             return Padding(
-                              padding: const EdgeInsets.only(right: 8),
+                              padding: const EdgeInsets.only(right: 12),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -803,17 +817,31 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
                                       ),
                                     ],
                                   ),
+                                  const SizedBox(height: 8),
                                   SizedBox(
                                     width: 120,
                                     child: TextField(
-                                      decoration: const InputDecoration(isDense: true, labelText: 'Título'),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        labelText: 'Título',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                      style: const TextStyle(fontSize: 12),
                                       onChanged: (v) => _newTitles[index] = v,
                                     ),
                                   ),
+                                  const SizedBox(height: 4),
                                   SizedBox(
                                     width: 120,
                                     child: TextField(
-                                      decoration: const InputDecoration(isDense: true, labelText: 'Descrição'),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        labelText: 'Descrição',
+                                        border: OutlineInputBorder(),
+                                        contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                      ),
+                                      style: const TextStyle(fontSize: 12),
                                       onChanged: (v) => _newDescs[index] = v,
                                     ),
                                   ),
