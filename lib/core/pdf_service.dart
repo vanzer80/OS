@@ -109,78 +109,62 @@ class PdfService {
           pw.Divider(color: PdfColors.grey500, thickness: 1),
           pw.SizedBox(height: 6),
 
-          // Faixa título com número
+          // Informações do Cliente (sem moldura)
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              if ((client?.name ?? '').isNotEmpty)
+                pw.Text(client!.name, style: const pw.TextStyle(fontSize: 12)),
+              if ((client?.phone ?? '').isNotEmpty)
+                pw.Text(client!.phone!, style: const pw.TextStyle(fontSize: 10)),
+              if ((client?.email ?? '').isNotEmpty)
+                pw.Text(client!.email!, style: const pw.TextStyle(fontSize: 10)),
+            ],
+          ),
+
+          pw.SizedBox(height: 12),
+
+          // Faixa título com número (agora após cliente)
           pw.Container(
             width: double.infinity,
             color: PdfColors.grey600,
             padding: const pw.EdgeInsets.symmetric(vertical: 6),
             child: pw.Center(
-              child: pw.Text('$titlePrefix ${order.orderNumber}',
+              child: pw.Text('$titlePrefix Nº ${order.orderNumber}',
                   style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold)),
             ),
           ),
 
-          // Dados do Cliente
-          pw.Container(
-            padding: const pw.EdgeInsets.all(8),
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey300),
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('Cliente', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 4),
-                pw.Text(client?.name ?? '-'),
-                if ((client?.phone ?? '').isNotEmpty) pw.Text(client!.phone!),
-                if ((client?.email ?? '').isNotEmpty) pw.Text(client!.email!),
-              ],
-            ),
-          ),
+          pw.SizedBox(height: 8),
 
-          pw.SizedBox(height: 12),
-
-          // Dados do Equipamento
-          pw.Container(
-            padding: const pw.EdgeInsets.all(8),
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfColors.grey300),
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text('Equipamento', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                pw.SizedBox(height: 6),
-                pw.Table(
-                  border: pw.TableBorder.all(color: PdfColors.grey300),
-                  columnWidths: const {
-                    0: pw.FlexColumnWidth(2),
-                    1: pw.FlexColumnWidth(2),
-                    2: pw.FlexColumnWidth(2),
-                    3: pw.FlexColumnWidth(2),
-                  },
-                  children: [
-                    pw.TableRow(
-                      decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-                      children: [
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Tipo', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Marca', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Modelo', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                        pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Nº Série', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                      ],
-                    ),
-                    pw.TableRow(children: [
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.equipment ?? '-')),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.brand ?? '-')),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.model ?? '-')),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.serialNumber ?? '-')),
-                    ]),
-                  ],
-                ),
-              ],
-            ),
+          // Dados do Equipamento (sem moldura)
+          pw.Text('Equipamento', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          pw.SizedBox(height: 6),
+          pw.Table(
+            border: pw.TableBorder.all(color: PdfColors.grey300),
+            columnWidths: const {
+              0: pw.FlexColumnWidth(2),
+              1: pw.FlexColumnWidth(2),
+              2: pw.FlexColumnWidth(2),
+              3: pw.FlexColumnWidth(2),
+            },
+            children: [
+              pw.TableRow(
+                decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+                children: [
+                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Tipo', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Marca', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Modelo', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Nº Série', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                ],
+              ),
+              pw.TableRow(children: [
+                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.equipment ?? '-')),
+                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.brand ?? '-')),
+                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.model ?? '-')),
+                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.serialNumber ?? '-')),
+              ]),
+            ],
           ),
 
           pw.SizedBox(height: 12),

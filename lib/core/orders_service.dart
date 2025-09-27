@@ -229,27 +229,17 @@ class OrdersService {
       final lastSeq = (resp.isNotEmpty && resp.first['seq_per_year'] != null)
           ? (resp.first['seq_per_year'] as int)
           : 0;
-      final nextSeq = lastSeq + 1;
-      // Formatar número conforme tipo
+      // Se não houver sequência anterior, iniciar em 0301 (padrão solicitado)
+      final nextSeq = lastSeq > 0 ? lastSeq + 1 : 301;
+      // Persistir somente no formato 0001-yy (sem prefixos)
       final yy = year % 100;
-      String prefix;
-      switch (type) {
-        case OrderType.budget:
-          prefix = 'ORÇAMENTO Nº';
-          break;
-        case OrderType.service:
-          prefix = 'OS Nº';
-          break;
-        case OrderType.sale:
-          prefix = 'VENDA Nº';
-          break;
-      }
-      final formatted = '$prefix ${nextSeq.toString().padLeft(4, '0')}-$yy';
+      final formatted = '${nextSeq.toString().padLeft(4, '0')}-$yy';
       return (formatted, year, nextSeq);
     } catch (error) {
       final now = DateTime.now();
       final yy = now.year % 100;
-      return ('OS Nº 0001-$yy', now.year, 1);
+      // Fallback seguro: começa em 0301 conforme padrão
+      return ('0301-$yy', now.year, 301);
     }
   }
 
