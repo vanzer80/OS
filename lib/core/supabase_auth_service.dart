@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -60,43 +61,62 @@ class SupabaseAuthService {
 
   Future<AuthResult> signInWithGoogle() async {
     try {
-      // Configurar Google Sign In
-      final GoogleSignIn googleSignIn = GoogleSignIn(
-        // O serverClientId será obtido do google-services.json automaticamente
-        scopes: ['email', 'profile'],
-      );
-      
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      
-      if (googleUser == null) {
-        return AuthResult(success: false, message: 'Login cancelado pelo usuário');
-      }
-      
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      
-      final accessToken = googleAuth.accessToken;
-      final idToken = googleAuth.idToken;
-      
-      if (accessToken == null) {
-        return AuthResult(success: false, message: 'Falha ao obter token de acesso');
-      }
-      
-      // Autenticar com Supabase usando os tokens do Google
-      final AuthResponse response = await _supabase.auth.signInWithIdToken(
-        provider: OAuthProvider.google,
-        idToken: idToken!,
-        accessToken: accessToken,
-      );
-      
-      if (response.user != null) {
-        return AuthResult(success: true, message: 'Login com Google realizado com sucesso!');
+      if (kIsWeb) {
+        // Implementação para Web
+        return await _signInWithGoogleWeb();
       } else {
-        return AuthResult(success: false, message: 'Falha na autenticação com Supabase');
+        // Implementação para Mobile (Android/iOS)
+        return await _signInWithGoogleMobile();
       }
     } on AuthException catch (error) {
       return AuthResult(success: false, message: error.message);
     } catch (error) {
       return AuthResult(success: false, message: 'Erro no login com Google: $error');
+    }
+  }
+
+  Future<AuthResult> _signInWithGoogleWeb() async {
+    // Para Web: usar OAuth redirect do Supabase
+    await _supabase.auth.signInWithOAuth(
+      OAuthProvider.google,
+      redirectTo: kIsWeb ? null : '${SupabaseConfig.supabaseUrl}/auth/v1/callback',
+    );
+    return AuthResult(success: true, message: 'Redirecionando para Google...');
+  }
+
+  Future<AuthResult> _signInWithGoogleMobile() async {
+    // Configurar Google Sign In para Mobile
+    final GoogleSignIn googleSignIn = GoogleSignIn(
+      serverClientId: '77408990333-up512fsnj0tdmk9ru2osev3utn39o6p0.apps.googleusercontent.com',
+      scopes: ['email', 'profile'],
+    );
+    
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    
+    if (googleUser == null) {
+      return AuthResult(success: false, message: 'Login cancelado pelo usuário');
+    }
+    
+    final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+    
+    final accessToken = googleAuth.accessToken;
+    final idToken = googleAuth.idToken;
+    
+    if (accessToken == null || idToken == null) {
+      return AuthResult(success: false, message: 'Falha ao obter tokens de autenticação');
+    }
+    
+    // Autenticar com Supabase usando os tokens do Google
+    final AuthResponse response = await _supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.google,
+      idToken: idToken,
+      accessToken: accessToken,
+    );
+    
+    if (response.user != null) {
+      return AuthResult(success: true, message: 'Login com Google realizado com sucesso!');
+    } else {
+      return AuthResult(success: false, message: 'Falha na autenticação com Supabase');
     }
   }
 
