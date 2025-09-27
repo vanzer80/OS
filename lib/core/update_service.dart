@@ -66,11 +66,44 @@ class UpdateService {
           ),
           ElevatedButton.icon(
             onPressed: () async {
-              final uri = Uri.parse(apkUrl);
-              if (await canLaunchUrl(uri)) {
-                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              try {
+                final uri = Uri.parse(apkUrl);
+                print('Tentando abrir URL: $apkUrl'); // Debug
+                
+                if (await canLaunchUrl(uri)) {
+                  final success = await launchUrl(
+                    uri, 
+                    mode: LaunchMode.externalApplication,
+                  );
+                  
+                  if (!success) {
+                    throw Exception('Falha ao abrir o navegador');
+                  }
+                  
+                  if (context.mounted) {
+                    Navigator.of(context).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Download iniciado! Verifique as notificações.'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                } else {
+                  throw Exception('URL não pode ser aberta');
+                }
+              } catch (e) {
+                print('Erro ao abrir URL: $e'); // Debug
+                if (context.mounted) {
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Erro ao iniciar download: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
-              if (context.mounted) Navigator.of(context).pop();
             },
             icon: const Icon(Icons.system_update_alt),
             label: const Text('Baixar atualização'),
