@@ -532,6 +532,11 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final bottomSafeArea = media.padding.bottom + media.viewPadding.bottom;
+    final keyboardInset = media.viewInsets.bottom; // > 0 quando teclado aberto
+    final bottomPadding = 16.0 + bottomSafeArea + (keyboardInset > 0 ? keyboardInset : 0);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Editar Ordem ${widget.order.orderNumber}'),
@@ -545,10 +550,12 @@ class _EditOrderScreenState extends ConsumerState<EditOrderScreen> {
           ),
         ],
       ),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+      body: SafeArea(
+        bottom: true,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+          padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding),
           children: [
             Card(
               child: Padding(
