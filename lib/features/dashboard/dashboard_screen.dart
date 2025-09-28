@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:intl/intl.dart';
 import '../../core/update_service.dart';
 import '../../core/clients_service.dart';
 import '../../core/orders_service.dart';
@@ -70,6 +71,8 @@ class HomeTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final summaryAsync = ref.watch(dashboardSummaryProvider);
+    final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
     return Scaffold(
       appBar: AppBar(
         title: const Text('OS Express'),
@@ -98,48 +101,74 @@ class HomeTab extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Cards de resumo
-            Row(
-              children: [
-                Expanded(
-                  child: _SummaryCard(
-                    title: 'Ordens Hoje',
-                    value: '12',
-                    icon: Icons.today,
-                    color: Colors.blue,
+            summaryAsync.when(
+              data: (s) => Row(
+                children: [
+                  Expanded(
+                    child: _SummaryCard(
+                      title: 'Ordens Hoje',
+                      value: s.ordersToday.toString(),
+                      icon: Icons.today,
+                      color: Colors.blue,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _SummaryCard(
-                    title: 'Pendentes',
-                    value: '5',
-                    icon: Icons.pending_actions,
-                    color: Colors.orange,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SummaryCard(
+                      title: 'Pendentes',
+                      value: s.pending.toString(),
+                      icon: Icons.pending_actions,
+                      color: Colors.orange,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Row(
+                children: const [
+                  Expanded(child: _SkeletonSummaryCard()),
+                  SizedBox(width: 16),
+                  Expanded(child: _SkeletonSummaryCard()),
+                ],
+              ),
             ),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _SummaryCard(
-                    title: 'Concluídas',
-                    value: '7',
-                    icon: Icons.check_circle,
-                    color: Colors.green,
+            summaryAsync.when(
+              data: (s) => Row(
+                children: [
+                  Expanded(
+                    child: _SummaryCard(
+                      title: 'Concluídas',
+                      value: s.completed.toString(),
+                      icon: Icons.check_circle,
+                      color: Colors.green,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _SummaryCard(
-                    title: 'Faturamento',
-                    value: 'R\$ 2.450',
-                    icon: Icons.attach_money,
-                    color: Colors.purple,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _SummaryCard(
+                      title: 'Faturamento',
+                      value: currency.format(s.monthlyRevenue),
+                      icon: Icons.attach_money,
+                      color: Colors.purple,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
+              loading: () => Row(
+                children: const [
+                  Expanded(child: _SkeletonSummaryCard()),
+                  SizedBox(width: 16),
+                  Expanded(child: _SkeletonSummaryCard()),
+                ],
+              ),
+              error: (e, _) => Row(
+                children: const [
+                  Expanded(child: _SkeletonSummaryCard()),
+                  SizedBox(width: 16),
+                  Expanded(child: _SkeletonSummaryCard()),
+                ],
+              ),
             ),
             const SizedBox(height: 32),
 

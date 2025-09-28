@@ -2,6 +2,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 enum OrderType { service, budget, sale }
+
+// ===================== Dashboard Summary Models/Providers =====================
+class DashboardSummary {
+  final int ordersToday;
+  final int pending;
+  final int completed;
+  final double monthlyRevenue;
+
+  DashboardSummary({
+    required this.ordersToday,
+    required this.pending,
+    required this.completed,
+    required this.monthlyRevenue,
+  });
+}
+
+final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
+  final service = ref.read(ordersServiceProvider);
+  return service.getDashboardSummary();
+});
 enum OrderStatus { pending, inProgress, completed, cancelled }
 
 class OrderImageRecord {
@@ -541,6 +561,55 @@ class OrdersService {
       return items.fold<double>(0.0, (sum, item) => sum + (item['total_price'] as num).toDouble());
     } catch (error) {
       throw Exception('Erro ao calcular total: $error');
+    }
+  }
+
+  // ===================== Dashboard Summary =====================
+  Future<DashboardSummary> getDashboardSummary() async {
+    try {
+      final now = DateTime.now();
+      final startOfToday = DateTime(now.year, now.month, now.day);
+      final startOfMonth = DateTime(now.year, now.month, 1);
+
+      // 1) Ordens criadas hoje
+      final todayResp = await _supabase
+          .from('service_orders')
+          .select('id', const FetchOptions(count: CountOption.exact))
+          .gte('created_at', startOfToday.toIso8601String());
+      final ordersToday = (todayResp.count ?? 0);
+
+      // 2) Pendentes
+      final pendingResp = await _supabase
+          .from('service_orders')
+          .select('id', const FetchOptions(count: CountOption.exact))
+          .eq('status', OrderStatus.pending.name);
+      final pending = (pendingResp.count ?? 0);
+
+      // 3) Concluídas
+      final completedResp = await _supabase
+          .from('service_orders')
+          .select('id', const FetchOptions(count: CountOption.exact))
+          .eq('status', OrderStatus.completed.name);
+      final completed = (completedResp.count ?? 0);
+
+      // 4) Faturamento (mês atual): soma de total_amount para ordens concluídas no mês
+      final revenueRows = await _supabase
+          .from('service_orders')
+          .select('total_amount')
+          .eq('status', OrderStatus.completed.name)
+          .gte('created_at', startOfMonth.toIso8601String())
+          .lte('created_at', now.toIso8601String());
+      final revenue = (revenueRows as List)
+          .fold<double>(0.0, (sum, row) => sum + (row['total_amount'] as num?)?.toDouble() ?? 0.0);
+
+      return DashboardSummary(
+        ordersToday: ordersToday,
+        pending: pending,
+        completed: completed,
+        monthlyRevenue: revenue,
+      );
+    } catch (error) {
+      throw Exception('Erro ao carregar resumo do dashboard: $error');
     }
   }
 }
