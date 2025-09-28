@@ -296,8 +296,20 @@ class OrdersService {
 
   Future<ServiceOrder> createOrder(ServiceOrder order) async {
     try {
-      // Gerar número por ano (único por ano)
-      final (orderNumber, fiscalYear, seq) = await _generateNumberByYear();
+      // Gerar número atômico via RPC no banco (único por ano)
+      final now = DateTime.now();
+      final fiscalYear = now.year;
+      int seq;
+      try {
+        final seqResp = await _supabase.rpc('get_next_order_seq', params: {'fy': fiscalYear});
+        seq = (seqResp as num).toInt();
+      } catch (_) {
+        // Fallback seguro: usa estratégia antiga por ano
+        final (_, fy, s) = await _generateNumberByYear();
+        seq = s;
+      }
+      final yy = fiscalYear % 100;
+      final orderNumber = '${seq.toString().padLeft(4, '0')}-$yy';
 
       final orderData = {
         ...order.toJson(),
