@@ -1,6 +1,6 @@
 {
-  "versionName": "1.0.4",
-  "versionCode": 5,
-  "apkUrl": "https://github.com/vanzer80/OS/releases/download/V4/app-release.apk",
-  "changelog": "Autenticação Google revisada: configuração Web + Android com Supabase, redirecionamento dinâmico por porta (Uri.base.origin) e instruções detalhadas. Ajustes no Gradle e melhorias de estabilidade."
+  "versionName": "1.0.5",
+  "versionCode": 6,
+  "apkUrl": "https://github.com/vanzer80/OS/releases/download/V5/app-release.apk",
+  "changelog": "Release V5: Correções do login Google (Web/Android) com Supabase, redirect dinâmico, ajustes de build e estabilidade."
 }
