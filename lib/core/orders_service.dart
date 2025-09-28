@@ -265,39 +265,39 @@ class ServiceOrder {
 class OrdersService {
   final SupabaseClient _supabase = Supabase.instance.client;
 
-  Future<(String,int,int)> _generateNumberByTypeYear(OrderType type) async {
+  // Geração de numeração: XXXX-YY onde XXXX é seq única por ano (reinicia em 0100) e YY são os dois dígitos do ano
+  Future<(String,int,int)> _generateNumberByYear() async {
     try {
       final now = DateTime.now();
       final year = now.year;
-      // Buscar máximo seq_per_year para este tipo e ano
+      // Buscar máximo seq_per_year para este ano
       final resp = await _supabase
           .from('service_orders')
           .select('seq_per_year')
-          .eq('type', type.name)
           .eq('fiscal_year', year)
           .order('seq_per_year', ascending: false)
           .limit(1);
       final lastSeq = (resp.isNotEmpty && resp.first['seq_per_year'] != null)
           ? (resp.first['seq_per_year'] as int)
           : 0;
-      // Se não houver sequência anterior, iniciar em 0301 (padrão solicitado)
-      final nextSeq = lastSeq > 0 ? lastSeq + 1 : 301;
-      // Persistir somente no formato 0001-yy (sem prefixos)
+      // Se não houver sequência anterior, iniciar em 0100
+      final nextSeq = lastSeq > 0 ? lastSeq + 1 : 100;
+      // Persistir no formato 0100-yy (4 dígitos + hífen + 2 dígitos do ano)
       final yy = year % 100;
       final formatted = '${nextSeq.toString().padLeft(4, '0')}-$yy';
       return (formatted, year, nextSeq);
     } catch (error) {
       final now = DateTime.now();
       final yy = now.year % 100;
-      // Fallback seguro: começa em 0301 conforme padrão
-      return ('0301-$yy', now.year, 301);
+      // Fallback seguro: começa em 0100
+      return ('0100-$yy', now.year, 100);
     }
   }
 
   Future<ServiceOrder> createOrder(ServiceOrder order) async {
     try {
-      // Gerar número por tipo/ano
-      final (orderNumber, fiscalYear, seq) = await _generateNumberByTypeYear(order.type);
+      // Gerar número por ano (único por ano)
+      final (orderNumber, fiscalYear, seq) = await _generateNumberByYear();
 
       final orderData = {
         ...order.toJson(),
@@ -572,25 +572,25 @@ class OrdersService {
       final startOfMonth = DateTime(now.year, now.month, 1);
 
       // 1) Ordens criadas hoje
-      final todayResp = await _supabase
+      final todayRows = await _supabase
           .from('service_orders')
-          .select('id', head: true, count: CountOption.exact)
+          .select('id')
           .gte('created_at', startOfToday.toIso8601String());
-      final ordersToday = (todayResp.count ?? 0);
+      final ordersToday = (todayRows as List).length;
 
-      // 2) Pendentes
-      final pendingResp = await _supabase
+      // 2) Abertas/Pendentes: considerar pending + in_progress
+      final pendingRows = await _supabase
           .from('service_orders')
-          .select('id', head: true, count: CountOption.exact)
-          .eq('status', OrderStatus.pending.name);
-      final pending = (pendingResp.count ?? 0);
+          .select('id')
+          .in_('status', [OrderStatus.pending.name, OrderStatus.inProgress.name]);
+      final pending = (pendingRows as List).length;
 
       // 3) Concluídas
-      final completedResp = await _supabase
+      final completedRows = await _supabase
           .from('service_orders')
-          .select('id', head: true, count: CountOption.exact)
+          .select('id')
           .eq('status', OrderStatus.completed.name);
-      final completed = (completedResp.count ?? 0);
+      final completed = (completedRows as List).length;
 
       // 4) Faturamento (mês atual): soma de total_amount para ordens concluídas no mês
       final revenueRows = await _supabase
