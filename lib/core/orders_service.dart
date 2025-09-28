@@ -582,7 +582,7 @@ class OrdersService {
       final pendingRows = await _supabase
           .from('service_orders')
           .select('id')
-          .in_('status', [OrderStatus.pending.name, OrderStatus.inProgress.name]);
+          .or('status.eq.${OrderStatus.pending.name},status.eq.${OrderStatus.inProgress.name}');
       final pending = (pendingRows as List).length;
 
       // 3) Concluídas
