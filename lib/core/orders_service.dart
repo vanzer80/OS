@@ -574,21 +574,21 @@ class OrdersService {
       // 1) Ordens criadas hoje
       final todayResp = await _supabase
           .from('service_orders')
-          .select('id', const FetchOptions(count: CountOption.exact))
+          .select('id', head: true, count: CountOption.exact)
           .gte('created_at', startOfToday.toIso8601String());
       final ordersToday = (todayResp.count ?? 0);
 
       // 2) Pendentes
       final pendingResp = await _supabase
           .from('service_orders')
-          .select('id', const FetchOptions(count: CountOption.exact))
+          .select('id', head: true, count: CountOption.exact)
           .eq('status', OrderStatus.pending.name);
       final pending = (pendingResp.count ?? 0);
 
       // 3) Concluídas
       final completedResp = await _supabase
           .from('service_orders')
-          .select('id', const FetchOptions(count: CountOption.exact))
+          .select('id', head: true, count: CountOption.exact)
           .eq('status', OrderStatus.completed.name);
       final completed = (completedResp.count ?? 0);
 
@@ -600,7 +600,7 @@ class OrdersService {
           .gte('created_at', startOfMonth.toIso8601String())
           .lte('created_at', now.toIso8601String());
       final revenue = (revenueRows as List)
-          .fold<double>(0.0, (sum, row) => sum + (row['total_amount'] as num?)?.toDouble() ?? 0.0);
+          .fold<double>(0.0, (sum, row) => sum + (((row['total_amount'] as num?)?.toDouble()) ?? 0.0));
 
       return DashboardSummary(
         ordersToday: ordersToday,

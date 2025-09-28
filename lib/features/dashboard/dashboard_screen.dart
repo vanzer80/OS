@@ -66,6 +66,34 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 }
 
+class _SkeletonSummaryCard extends StatelessWidget {
+  const _SkeletonSummaryCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final base = Theme.of(context).colorScheme.onSurfaceVariant.withAlpha(40);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(width: 24, height: 24, decoration: BoxDecoration(color: base, borderRadius: BorderRadius.circular(6))),
+                const Spacer(),
+                Container(width: 48, height: 20, decoration: BoxDecoration(color: base, borderRadius: BorderRadius.circular(6))),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Container(width: 100, height: 14, decoration: BoxDecoration(color: base, borderRadius: BorderRadius.circular(6))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class HomeTab extends ConsumerWidget {
   const HomeTab({super.key});
 
