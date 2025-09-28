@@ -1,6 +1,6 @@
 {
-  "versionName": "1.0.3",
-  "versionCode": 4,
+  "versionName": "1.0.4",
+  "versionCode": 5,
   "apkUrl": "https://github.com/vanzer80/OS/releases/download/V4/app-release.apk",
-  "changelog": "Correção do download de APK: adicionadas permissões Android necessárias e melhorado tratamento de erro com feedback visual para o usuário."
+  "changelog": "Autenticação Google revisada: configuração Web + Android com Supabase, redirecionamento dinâmico por porta (Uri.base.origin) e instruções detalhadas. Ajustes no Gradle e melhorias de estabilidade."
 }
