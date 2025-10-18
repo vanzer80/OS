@@ -25,6 +25,8 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _contactCtrl = TextEditingController();
+  final _paymentTermsCtrl = TextEditingController();
+  final _warrantyCtrl = TextEditingController();
 
   String? _logoUrl;
   String? _signatureUrl;
@@ -35,6 +37,30 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   void initState() {
     super.initState();
     _load();
+    // Escuta mudanças em tempo real no perfil e reflete na UI
+    ref.listen<AsyncValue<CompanyProfile?>>(companyProfileStreamProvider, (prev, next) {
+      if (!mounted) return;
+      if (next.hasValue && next.value != null) {
+        final p = next.value!;
+        setState(() {
+          _nameCtrl.text = p.name;
+          _taxIdCtrl.text = p.taxId ?? '';
+          _streetCtrl.text = p.street ?? '';
+          _streetNumberCtrl.text = p.streetNumber ?? '';
+          _neighborhoodCtrl.text = p.neighborhood ?? '';
+          _cityCtrl.text = p.city ?? '';
+          _stateCtrl.text = p.state ?? '';
+          _zipCtrl.text = p.zip ?? '';
+          _phoneCtrl.text = p.phone ?? '';
+          _emailCtrl.text = p.email ?? '';
+          _contactCtrl.text = p.contactName ?? '';
+          _logoUrl = p.logoUrl;
+          _signatureUrl = p.signatureUrl;
+          _paymentTermsCtrl.text = p.defaultPaymentTerms ?? '';
+          _warrantyCtrl.text = p.defaultWarranty ?? '';
+        });
+      }
+    });
   }
 
   Future<void> _load() async {
@@ -55,6 +81,8 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
         _contactCtrl.text = p.contactName ?? '';
         _logoUrl = p.logoUrl;
         _signatureUrl = p.signatureUrl;
+        _paymentTermsCtrl.text = p.defaultPaymentTerms ?? '';
+        _warrantyCtrl.text = p.defaultWarranty ?? '';
       }
     } catch (e) {
       if (!mounted) return;
@@ -113,15 +141,25 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
         contactName: _contactCtrl.text.trim().isEmpty ? null : _contactCtrl.text.trim(),
         logoUrl: _logoUrl,
         signatureUrl: _signatureUrl,
+        defaultPaymentTerms: _paymentTermsCtrl.text.trim().isEmpty ? null : _paymentTermsCtrl.text.trim(),
+        defaultWarranty: _warrantyCtrl.text.trim().isEmpty ? null : _warrantyCtrl.text.trim(),
       ));
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Perfil salvo com sucesso')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao salvar: $e')));
+      final msg = _formatSaveError(e);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } finally {
       if (mounted) setState(() => _saving = false);
     }
+  }
+  String _formatSaveError(Object e) {
+    final s = e.toString();
+    if (s.contains('PGRST204') || s.contains('schema cache') || s.contains("Could not find the 'default_payment_terms'")) {
+      return 'Erro ao salvar: schema do Supabase desatualizado. Aguarde alguns segundos, recarregue o app ou reinicie o projeto para atualizar o cache.';
+    }
+    return 'Erro ao salvar: $s';
   }
 
   @override
@@ -137,6 +175,8 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
     _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _contactCtrl.dispose();
+    _paymentTermsCtrl.dispose();
+    _warrantyCtrl.dispose();
     super.dispose();
   }
 
@@ -291,6 +331,41 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                           ),
                         ),
                       ],
+                    ),
+
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    const Text('Configurações da Ordem', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: _paymentTermsCtrl,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Condições de Pagamento (padrão)',
+                        hintText: 'Ex.: À vista, Pix, 30/60 dias...',
+                        alignLabelWithHint: true,
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) {
+                        final t = (v ?? '').trim();
+                        if (t.length > 500) return 'Máximo de 500 caracteres';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _warrantyCtrl,
+                      decoration: const InputDecoration(
+                        labelText: 'Garantia (padrão)',
+                        hintText: 'Ex.: 90 dias para serviço, sem cobertura de peças',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (v) {
+                        final t = (v ?? '').trim();
+                        if (t.length > 300) return 'Máximo de 300 caracteres';
+                        return null;
+                      },
                     ),
 
                     const SizedBox(height: 24),

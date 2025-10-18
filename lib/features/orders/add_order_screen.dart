@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import '../../core/orders_service.dart';
 import '../../core/clients_service.dart';
 import '../../core/image_upload_service.dart';
+import '../../core/company_profile_service.dart';
 import '../clients/add_client_screen.dart';
 
 class AddOrderScreen extends ConsumerStatefulWidget {
@@ -33,6 +33,25 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
   final List<String> _imageTitles = [];
   final List<String> _imageDescs = [];
   bool _isLoading = false;
+  String? _defaultPaymentTerms;
+  String? _defaultWarranty;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDefaults();
+  }
+
+  Future<void> _loadDefaults() async {
+    try {
+      final svc = ref.read(companyProfileServiceProvider);
+      final profile = await svc.getProfile();
+      setState(() {
+        _defaultPaymentTerms = profile?.defaultPaymentTerms;
+        _defaultWarranty = profile?.defaultWarranty;
+      });
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
@@ -378,6 +397,8 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
         brand: _brandController.text.trim().isEmpty ? null : _brandController.text.trim(), // Novo campo
         serialNumber: _serialNumberController.text.trim().isEmpty ? null : _serialNumberController.text.trim(), // Novo campo
         description: _descriptionController.text.trim().isEmpty ? null : _descriptionController.text.trim(),
+        paymentTerms: _defaultPaymentTerms,
+        warranty: _defaultWarranty,
         totalAmount: _totalAmount,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -758,7 +779,7 @@ class _AddOrderScreenState extends ConsumerState<AddOrderScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Imagens (${_imagesCount}/5)',
+                          'Imagens ($_imagesCount/5)',
                           style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.bold,

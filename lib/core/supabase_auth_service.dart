@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'supabase_config.dart';
 
 // Serviço de autenticação real com Supabase
@@ -81,7 +80,7 @@ class SupabaseAuthService {
       // Para Web: usar OAuth redirect do Supabase
       await _supabase.auth.signInWithOAuth(
         OAuthProvider.google,
-        redirectTo: SupabaseConfig.authCallbackUrl,
+        redirectTo: '${Uri.base.origin}/#/auth/callback',
         authScreenLaunchMode: LaunchMode.platformDefault,
       );
       
@@ -141,7 +140,7 @@ class SupabaseAuthService {
     return _supabase.auth.onAuthStateChange.map((data) {
       return AuthState(
         isAuthenticated: data.session != null,
-        currentUser: data.session?.user?.email,
+        currentUser: data.session?.user.email,
         isLoading: false,
       );
     });

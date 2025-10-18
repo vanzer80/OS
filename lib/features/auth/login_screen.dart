@@ -65,11 +65,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await ref.read(supabaseAuthStateProvider.notifier).signInWithGoogle();
-
+      final authService = ref.read(supabaseAuthServiceProvider);
+      final result = await authService.signInWithGoogle();
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login com Google: ${result.message}')),
+          SnackBar(content: Text(result.message)),
         );
         
         if (result.success) {
@@ -101,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         centerTitle: true,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Form(
             key: _formKey,
@@ -245,7 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(height: 24),
                 
                 // Register Link
                 Row(

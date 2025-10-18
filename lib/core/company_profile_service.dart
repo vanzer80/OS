@@ -18,6 +18,9 @@ class CompanyProfile {
   final String? contactName;
   final String? logoUrl;
   final String? signatureUrl;
+  // Defaults for orders
+  final String? defaultPaymentTerms;
+  final String? defaultWarranty;
 
   CompanyProfile({
     required this.userId,
@@ -35,6 +38,8 @@ class CompanyProfile {
     this.contactName,
     this.logoUrl,
     this.signatureUrl,
+    this.defaultPaymentTerms,
+    this.defaultWarranty,
   });
 
   factory CompanyProfile.fromJson(Map<String, dynamic> json) => CompanyProfile(
@@ -53,6 +58,8 @@ class CompanyProfile {
         contactName: json['contact_name'],
         logoUrl: json['logo_url'],
         signatureUrl: json['signature_url'],
+        defaultPaymentTerms: json['default_payment_terms'],
+        defaultWarranty: json['default_warranty'],
       );
 
   Map<String, dynamic> toJson() => {
@@ -71,6 +78,8 @@ class CompanyProfile {
         'contact_name': contactName,
         'logo_url': logoUrl,
         'signature_url': signatureUrl,
+        'default_payment_terms': defaultPaymentTerms,
+        'default_warranty': defaultWarranty,
       };
 }
 
@@ -91,12 +100,27 @@ class CompanyProfileService {
   }
 
   Future<CompanyProfile> upsertProfile(CompanyProfile profile) async {
-    final res = await _supabase
-        .from('company_profiles')
-        .upsert(profile.toJson())
-        .select()
-        .single();
-    return CompanyProfile.fromJson(res);
+    // Tenta salvar com todos os campos; se a tabela não tiver as novas colunas,
+    // faz fallback para salvar apenas os campos existentes.
+    Map<String, dynamic> payload = profile.toJson();
+    try {
+      final res = await _supabase
+          .from('company_profiles')
+          .upsert(payload)
+          .select()
+          .single();
+      return CompanyProfile.fromJson(res);
+    } catch (e) {
+      // Fallback: remove campos que podem não existir ainda no schema
+      payload.remove('default_payment_terms');
+      payload.remove('default_warranty');
+      final res = await _supabase
+          .from('company_profiles')
+          .upsert(payload)
+          .select()
+          .single();
+      return CompanyProfile.fromJson(res);
+    }
   }
 
   Future<String> uploadLogo(Uint8List bytes, {String fileName = 'logo.png'}) async {
@@ -112,9 +136,29 @@ class CompanyProfileService {
     await _supabase.storage.from(bucket).uploadBinary(path, bytes, fileOptions: const FileOptions(contentType: 'image/png', upsert: true));
     return _supabase.storage.from(bucket).getPublicUrl(path);
   }
+
+  // Stream de perfil para sincronização em tempo real
+  Stream<CompanyProfile?> getProfileStream() async* {
+    final user = _supabase.auth.currentUser;
+    if (user == null) {
+      yield null;
+      return;
+    }
+    final stream = _supabase
+        .from('company_profiles')
+        .stream(primaryKey: ['user_id'])
+        .eq('user_id', user.id);
+    yield* stream.map((rows) {
+      if (rows.isEmpty) return null;
+      return CompanyProfile.fromJson(rows.first);
+    });
+  }
 }
 
 final companyProfileServiceProvider = Provider<CompanyProfileService>((ref) => CompanyProfileService());
 final companyProfileProvider = FutureProvider<CompanyProfile?>((ref) async {
   return ref.read(companyProfileServiceProvider).getProfile();
+});
+final companyProfileStreamProvider = StreamProvider<CompanyProfile?>((ref) {
+  return ref.read(companyProfileServiceProvider).getProfileStream();
 });

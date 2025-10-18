@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/supabase_config.dart';
+import 'core/supabase_auth_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
@@ -41,8 +42,35 @@ class OSExpressApp extends StatelessWidget {
         useMaterial3: true,
       ),
       themeMode: ThemeMode.system,
-      home: const WelcomeScreen(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+// AuthWrapper para gerenciar redirecionamento automático
+class AuthWrapper extends ConsumerWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(supabaseAuthStateProvider);
+    
+    // Se está carregando, mostra loading
+    if (authState.isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+    
+    // Se está autenticado, vai para o dashboard
+    if (authState.isAuthenticated) {
+      return const DashboardScreen();
+    }
+    
+    // Se não está autenticado, mostra tela de boas-vindas
+    return const WelcomeScreen();
   }
 }
 

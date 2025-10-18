@@ -34,7 +34,7 @@ class PdfService {
     final totalServicos = total; // alias para clareza
 
     String joinParts(List<String?> parts) =>
-        parts.where((e) => e != null && e!.trim().isNotEmpty).map((e) => e!.trim()).join(', ');
+        parts.where((e) => e != null && e.trim().isNotEmpty).map((e) => e!.trim()).join(', ');
     final lineAddress1 = joinParts([profile?.street, profile?.streetNumber, profile?.neighborhood]);
     final lineAddress2 = joinParts([profile?.city, profile?.state, profile?.zip]);
 
@@ -45,6 +45,16 @@ class PdfService {
         logoImage = await networkImage(profile!.logoUrl!);
       } catch (_) {
         logoImage = null;
+      }
+    }
+
+    // Pré-carregar assinatura (opcional)
+    pw.ImageProvider? signatureImage;
+    if ((profile?.signatureUrl ?? '').isNotEmpty) {
+      try {
+        signatureImage = await networkImage(profile!.signatureUrl!);
+      } catch (_) {
+        signatureImage = null;
       }
     }
 
@@ -91,11 +101,17 @@ class PdfService {
             children: [
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
+              children: [
                   if (logoImage != null)
-                    pw.Padding(
-                      padding: const pw.EdgeInsets.only(bottom: 4),
-                      child: pw.Image(logoImage, height: 36),
+                    pw.Container(
+                      width: 48,
+                      height: 36,
+                      margin: const pw.EdgeInsets.only(bottom: 6),
+                      child: pw.FittedBox(
+                        fit: pw.BoxFit.contain,
+                        alignment: pw.Alignment.centerLeft,
+                        child: pw.Image(logoImage),
+                      ),
                     ),
 
                   pw.Text(
@@ -240,7 +256,7 @@ class PdfService {
                 pw.SizedBox(height: 4),
                 pw.Text('Subtotal        ${_currency.format(totalServicos)}'),
                 pw.SizedBox(height: 6),
-                pw.Text('Total ${titlePrefix}    ${_currency.format(totalServicos)}',
+                pw.Text('Total $titlePrefix    ${_currency.format(totalServicos)}',
                     style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               ],
             ),
@@ -261,7 +277,7 @@ class PdfService {
                 child: pw.RichText(
                   text: pw.TextSpan(children: [
                     pw.TextSpan(text: 'Condições de Pagamento: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.TextSpan(text: order.paymentTerms ?? '—'),
+                    pw.TextSpan(text: order.paymentTerms ?? (profile?.defaultPaymentTerms ?? '—')),
                   ]),
                 ),
               ),
@@ -270,7 +286,7 @@ class PdfService {
                 child: pw.RichText(
                   text: pw.TextSpan(children: [
                     pw.TextSpan(text: 'Garantia: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.TextSpan(text: order.warranty ?? '—'),
+                    pw.TextSpan(text: order.warranty ?? (profile?.defaultWarranty ?? '—')),
                   ]),
                 ),
               ),
@@ -327,8 +343,8 @@ class PdfService {
           pw.SizedBox(height: 40),
           pw.Center(
             child: pw.Column(children: [
-              if ((profile?.signatureUrl ?? '').isNotEmpty)
-                pw.Container(height: 40),
+              if (signatureImage != null)
+                pw.Image(signatureImage, height: 40),
               pw.Text(profile?.name ?? 'Oficina', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
               if ((profile?.contactName ?? '').isNotEmpty) pw.Text(profile!.contactName!),
             ]),

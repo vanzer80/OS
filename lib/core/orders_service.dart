@@ -212,6 +212,8 @@ class ServiceOrder {
       'warranty': warranty,
       'observations': observations,
       'total_amount': totalAmount,
+      'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
       'fiscal_year': fiscalYear,
       'seq_per_year': seqPerYear,
     };
@@ -294,6 +296,28 @@ class OrdersService {
     }
   }
 
+  // Assinatura em tempo real de mudanças na tabela service_orders
+  RealtimeChannel? _ordersChannel;
+  void subscribeOrdersRealtime(void Function() onChange) {
+    try {
+      final user = _supabase.auth.currentUser;
+      _ordersChannel ??= _supabase.channel('orders-changes');
+      _ordersChannel!
+          .onPostgresChanges(
+            event: PostgresChangeEvent.all,
+            schema: 'public',
+            table: 'service_orders',
+            // Filtra por usuário (se disponível na versão da lib)
+            // Para versões sem filtro, aplicamos callback universal
+            // e o Notifier revalida lista pelo provider.
+            callback: (_) => onChange(),
+          )
+          .subscribe();
+    } catch (_) {
+      // Silencioso: caso a assinatura falhe, o app segue funcionando
+    }
+  }
+
   Future<ServiceOrder> createOrder(ServiceOrder order) async {
     try {
       // Gerar número atômico via RPC no banco (único por ano)
@@ -310,6 +334,27 @@ class OrdersService {
       }
       final yy = fiscalYear % 100;
       final orderNumber = '${seq.toString().padLeft(4, '0')}-$yy';
+      // Garantir persistência dos campos de pagamento/garantia com fallback do perfil
+      String? _pt = order.paymentTerms?.trim();
+      String? _wt = order.warranty?.trim();
+      if ((_pt == null || _pt.isEmpty) || (_wt == null || _wt.isEmpty)) {
+        try {
+          final user = _supabase.auth.currentUser;
+          if (user != null) {
+            final profileRow = await _supabase
+                .from('company_profiles')
+                .select('default_payment_terms, default_warranty')
+                .eq('user_id', user.id)
+                .maybeSingle();
+            if (profileRow != null) {
+              _pt = (_pt == null || _pt.isEmpty) ? (profileRow['default_payment_terms'] as String?) : _pt;
+              _wt = (_wt == null || _wt.isEmpty) ? (profileRow['default_warranty'] as String?) : _wt;
+            }
+          }
+        } catch (_) {
+          // Ignora fallback silenciosamente se não conseguir carregar perfil
+        }
+      }
 
       final orderData = {
         ...order.toJson(),
@@ -317,6 +362,9 @@ class OrdersService {
         'status': OrderStatus.pending.name,
         'fiscal_year': fiscalYear,
         'seq_per_year': seq,
+        // Override explícito para garantir persistência
+        'payment_terms': _pt,
+        'warranty': _wt,
       };
 
       final response = await _supabase
@@ -374,10 +422,17 @@ class OrdersService {
 
   Future<ServiceOrder> updateOrder(String id, ServiceOrder order) async {
     try {
+      // Normaliza strings
+      final normalized = {
+        ...order.toJson(),
+        'payment_terms': order.paymentTerms?.trim(),
+        'warranty': order.warranty?.trim(),
+      };
+
       final response = await _supabase
           .from('service_orders')
           .update({
-            ...order.toJson(),
+            ...normalized,
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', id)
@@ -638,6 +693,13 @@ class OrdersNotifier extends StateNotifier<AsyncValue<List<ServiceOrder>>> {
 
   OrdersNotifier(this._ordersService) : super(const AsyncValue.loading()) {
     loadOrders();
+    // Assina mudanças em tempo real para manter a UI sincronizada
+    try {
+      _ordersService.subscribeOrdersRealtime(() {
+        // Recarrega lista ao detectar mudanças
+        loadOrders();
+      });
+    } catch (_) {}
   }
 
   Future<void> loadOrders({
