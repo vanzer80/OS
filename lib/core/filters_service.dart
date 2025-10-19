@@ -7,9 +7,12 @@ class FiltersService {
 
   Future<List<String>> getClientsForFilter() async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final response = await _supabase
           .from('clients')
           .select('name')
+          .eq('user_id', user.id)
           .order('name');
 
       return (response as List)
@@ -22,9 +25,12 @@ class FiltersService {
 
   Future<List<String>> getEquipmentsForFilter() async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final response = await _supabase
           .from('service_orders')
           .select('equipment')
+          .eq('user_id', user.id)
           .not('equipment', 'is', null)
           .order('equipment');
 
@@ -39,9 +45,12 @@ class FiltersService {
 
   Future<List<String>> getModelsForFilter() async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final response = await _supabase
           .from('service_orders')
           .select('model')
+          .eq('user_id', user.id)
           .not('model', 'is', null)
           .order('model');
 

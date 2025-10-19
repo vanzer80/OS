@@ -4,6 +4,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:printing/printing.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'orders_service.dart';
 import 'clients_service.dart';
 import 'company_profile_service.dart';
@@ -42,7 +43,25 @@ class PdfService {
     pw.ImageProvider? logoImage;
     if ((profile?.logoUrl ?? '').isNotEmpty) {
       try {
-        logoImage = await networkImage(profile!.logoUrl!);
+        final bucket = CompanyProfileService.bucket;
+        final urlOrPath = profile!.logoUrl!;
+        final isUrl = urlOrPath.startsWith('http');
+        String path;
+        if (isUrl) {
+          try {
+            final uri = Uri.parse(urlOrPath);
+            final idx = uri.pathSegments.indexOf(bucket);
+            path = idx != -1 && idx + 1 < uri.pathSegments.length
+                ? uri.pathSegments.sublist(idx + 1).join('/')
+                : urlOrPath;
+          } catch (_) {
+            path = urlOrPath;
+          }
+        } else {
+          path = urlOrPath;
+        }
+        final signed = await Supabase.instance.client.storage.from(bucket).createSignedUrl(path, 60 * 60);
+        logoImage = await networkImage(signed);
       } catch (_) {
         logoImage = null;
       }
@@ -52,7 +71,25 @@ class PdfService {
     pw.ImageProvider? signatureImage;
     if ((profile?.signatureUrl ?? '').isNotEmpty) {
       try {
-        signatureImage = await networkImage(profile!.signatureUrl!);
+        final bucket = CompanyProfileService.bucket;
+        final urlOrPath = profile!.signatureUrl!;
+        final isUrl = urlOrPath.startsWith('http');
+        String path;
+        if (isUrl) {
+          try {
+            final uri = Uri.parse(urlOrPath);
+            final idx = uri.pathSegments.indexOf(bucket);
+            path = idx != -1 && idx + 1 < uri.pathSegments.length
+                ? uri.pathSegments.sublist(idx + 1).join('/')
+                : urlOrPath;
+          } catch (_) {
+            path = urlOrPath;
+          }
+        } else {
+          path = urlOrPath;
+        }
+        final signed = await Supabase.instance.client.storage.from(bucket).createSignedUrl(path, 60 * 60);
+        signatureImage = await networkImage(signed);
       } catch (_) {
         signatureImage = null;
       }

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'supabase_config.dart';
 
 enum OrderType { service, budget, sale }
 
@@ -387,9 +388,12 @@ class OrdersService {
     DateTime? endDate,
   }) async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       var queryBuilder = _supabase
           .from('service_orders')
-          .select();
+          .select()
+          .eq('user_id', user.id);
 
       if (clientId != null) {
         queryBuilder = queryBuilder.eq('client_id', clientId);
@@ -429,6 +433,8 @@ class OrdersService {
         'warranty': order.warranty?.trim(),
       };
 
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final response = await _supabase
           .from('service_orders')
           .update({
@@ -436,6 +442,7 @@ class OrdersService {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', id)
+          .eq('user_id', user.id)
           .select()
           .single();
 
@@ -447,15 +454,19 @@ class OrdersService {
 
   Future<void> deleteOrder(String id) async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       await _supabase
           .from('service_orders')
           .delete()
-          .eq('id', id);
+          .eq('id', id)
+          .eq('user_id', user.id);
     } catch (error) {
       throw Exception('Erro ao deletar ordem: $error');
     }
   }
 
+  // ===================== Itens da Ordem =====================
   Future<List<OrderItem>> getOrderItems(String orderId) async {
     try {
       final response = await _supabase
@@ -463,7 +474,6 @@ class OrdersService {
           .select()
           .eq('order_id', orderId)
           .order('created_at', ascending: true);
-
       return (response as List)
           .map((json) => OrderItem.fromJson(json))
           .toList();
@@ -479,25 +489,20 @@ class OrdersService {
           .insert(item.toJson())
           .select()
           .single();
-
       return OrderItem.fromJson(response);
     } catch (error) {
-      throw Exception('Erro ao criar item: $error');
+      throw Exception('Erro ao criar item da ordem: $error');
     }
   }
 
-  Future<OrderItem> updateOrderItem(String id, OrderItem item) async {
+  Future<void> updateOrderItem(String id, OrderItem item) async {
     try {
-      final response = await _supabase
+      await _supabase
           .from('order_items')
           .update(item.toJson())
-          .eq('id', id)
-          .select()
-          .single();
-
-      return OrderItem.fromJson(response);
+          .eq('id', id);
     } catch (error) {
-      throw Exception('Erro ao atualizar item: $error');
+      throw Exception('Erro ao atualizar item da ordem: $error');
     }
   }
 
@@ -508,7 +513,7 @@ class OrdersService {
           .delete()
           .eq('id', id);
     } catch (error) {
-      throw Exception('Erro ao deletar item: $error');
+      throw Exception('Erro ao deletar item da ordem: $error');
     }
   }
 
@@ -519,121 +524,105 @@ class OrdersService {
           .delete()
           .eq('order_id', orderId);
     } catch (error) {
-      throw Exception('Erro ao excluir itens da ordem: $error');
+      throw Exception('Erro ao deletar itens da ordem: $error');
     }
   }
 
   // ===================== Imagens da Ordem =====================
-  Future<void> deleteImagesForOrder(String orderId) async {
+  // Helpers para geração de URLs assinadas de imagens
+  String _pathFromPublicUrl(String url, String bucket) {
     try {
-      await _supabase.from('order_images').delete().eq('order_id', orderId);
-    } catch (error) {
-      throw Exception('Erro ao excluir imagens da ordem: $error');
+      final uri = Uri.parse(url);
+      final idx = uri.pathSegments.indexOf(bucket);
+      if (idx != -1 && idx + 1 < uri.pathSegments.length) {
+        return uri.pathSegments.sublist(idx + 1).join('/');
+      }
+      return url;
+    } catch (_) {
+      return url;
     }
   }
 
-  Future<void> addOrderImages(String orderId, List<String> urls) async {
-    if (urls.isEmpty) return;
+  Future<String> _signedUrlForImage(String bucket, String urlOrPath, {int expiresInSeconds = 3600}) async {
+    final isUrl = urlOrPath.startsWith('http');
+    final path = isUrl ? _pathFromPublicUrl(urlOrPath, bucket) : urlOrPath;
+    final signed = await _supabase.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
+    return signed;
+  }
+
+  Future<void> addOrderImagesWithMeta(String orderId, List<OrderImageRecord> records) async {
     try {
-      final rows = <Map<String, dynamic>>[];
-      for (var i = 0; i < urls.length; i++) {
-        rows.add({
-          'order_id': orderId,
-          'url': urls[i],
-          'position': i,
-        });
-      }
-      await _supabase.from('order_images').insert(rows);
+      if (records.isEmpty) return;
+      final rows = records.map((r) => r.toRow(orderId)).toList();
+      await _supabase
+          .from('order_images')
+          .insert(rows);
     } catch (error) {
       throw Exception('Erro ao salvar imagens da ordem: $error');
     }
   }
 
-  Future<void> addOrderImagesWithMeta(String orderId, List<OrderImageRecord> records) async {
-    if (records.isEmpty) return;
-    try {
-      final rows = records.map((r) => r.toRow(orderId)).toList();
-      await _supabase.from('order_images').insert(rows);
-    } catch (error) {
-      throw Exception('Erro ao salvar imagens da ordem (meta): $error');
-    }
-  }
-
-  Future<List<String>> getOrderImageUrls(String orderId) async {
-    try {
-      final response = await _supabase
-          .from('order_images')
-          .select('url, position')
-          .eq('order_id', orderId)
-          .order('position', ascending: true);
-      final urls = (response as List).map((e) => (e['url'] as String)).toList();
-      if (urls.isNotEmpty) return urls;
-
-      // Fallback: listar do Storage caso a tabela esteja vazia (compatibilidade)
-      try {
-        final files = await _supabase.storage.from('order-images').list(path: 'orders/$orderId');
-        return files
-            .where((f) => !(f.name.startsWith('.') || f.name.isEmpty))
-            .map((f) => _supabase.storage
-                .from('order-images')
-                .getPublicUrl('orders/$orderId/${f.name}'))
-            .toList();
-      } catch (_) {
-        return urls; // continua vazio
-      }
-    } catch (error) {
-      throw Exception('Erro ao buscar imagens da ordem: $error');
-    }
-  }
-
   Future<List<OrderImageRecord>> getOrderImages(String orderId) async {
     try {
-      final response = await _supabase
+      final rows = await _supabase
           .from('order_images')
-          .select('url, title, description, position')
+          .select()
           .eq('order_id', orderId)
           .order('position', ascending: true);
-      final rows = (response as List).map((e) => OrderImageRecord.fromJson(e)).toList();
-      if (rows.isNotEmpty) return rows;
 
-      // Fallback: listar do Storage sem meta
-      try {
-        final files = await _supabase.storage.from('order-images').list(path: 'orders/$orderId');
-        return files
-            .where((f) => !(f.name.startsWith('.') || f.name.isEmpty))
-            .toList()
-            .asMap()
-            .entries
-            .map((entry) => OrderImageRecord(
-                  url: _supabase.storage.from('order-images').getPublicUrl('orders/$orderId/${entry.value.name}'),
-                  position: entry.key,
-                ))
-            .toList();
-      } catch (_) {
-        return rows; // vazio
+      final list = (rows as List);
+      if (list.isNotEmpty) {
+        final List<OrderImageRecord> out = [];
+        for (var i = 0; i < list.length; i++) {
+          final json = list[i] as Map<String, dynamic>;
+          final urlOrPath = json['url'] as String?;
+          final signed = urlOrPath == null ? null : await _signedUrlForImage(SupabaseConfig.imagesBucket, urlOrPath, expiresInSeconds: 60 * 60);
+          out.add(OrderImageRecord(
+            url: signed ?? urlOrPath ?? '',
+            position: json['position'] ?? i,
+            title: json['title'],
+            description: json['description'],
+          ));
+        }
+        return out;
       }
+
+      // Fallback: listar diretamente do Storage se tabela estiver vazia
+      final files = await _supabase.storage
+          .from(SupabaseConfig.imagesBucket)
+          .list(path: 'orders/$orderId/');
+
+      final List<OrderImageRecord> records = [];
+      for (var i = 0; i < files.length; i++) {
+        final f = files[i];
+        final name = (f as dynamic).name as String;
+        final signed = await _supabase.storage
+            .from(SupabaseConfig.imagesBucket)
+            .createSignedUrl('orders/$orderId/$name', 60 * 60);
+        records.add(OrderImageRecord(url: signed, position: i));
+      }
+      return records;
     } catch (error) {
-      throw Exception('Erro ao buscar imagens da ordem (meta): $error');
+      throw Exception('Erro ao carregar imagens da ordem: $error');
     }
   }
 
-  Future<double> calculateOrderTotal(String orderId) async {
+  Future<void> deleteImagesForOrder(String orderId) async {
     try {
-      final response = await _supabase
-          .from('order_items')
-          .select('total_price')
+      await _supabase
+          .from('order_images')
+          .delete()
           .eq('order_id', orderId);
-
-      final items = response as List;
-      return items.fold<double>(0.0, (sum, item) => sum + (item['total_price'] as num).toDouble());
     } catch (error) {
-      throw Exception('Erro ao calcular total: $error');
+      throw Exception('Erro ao deletar imagens da ordem: $error');
     }
   }
 
   // ===================== Dashboard Summary =====================
   Future<DashboardSummary> getDashboardSummary() async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final now = DateTime.now();
       final startOfToday = DateTime(now.year, now.month, now.day);
       final startOfMonth = DateTime(now.year, now.month, 1);
@@ -642,6 +631,7 @@ class OrdersService {
       final todayRows = await _supabase
           .from('service_orders')
           .select('id')
+          .eq('user_id', user.id)
           .gte('created_at', startOfToday.toIso8601String());
       final ordersToday = (todayRows as List).length;
 
@@ -649,6 +639,7 @@ class OrdersService {
       final pendingRows = await _supabase
           .from('service_orders')
           .select('id')
+          .eq('user_id', user.id)
           .or('status.eq.${OrderStatus.pending.name},status.eq.${OrderStatus.inProgress.name}');
       final pending = (pendingRows as List).length;
 
@@ -656,6 +647,7 @@ class OrdersService {
       final completedRows = await _supabase
           .from('service_orders')
           .select('id')
+          .eq('user_id', user.id)
           .eq('status', OrderStatus.completed.name);
       final completed = (completedRows as List).length;
 
@@ -663,6 +655,7 @@ class OrdersService {
       final revenueRows = await _supabase
           .from('service_orders')
           .select('total_amount')
+          .eq('user_id', user.id)
           .eq('status', OrderStatus.completed.name)
           .gte('created_at', startOfMonth.toIso8601String())
           .lte('created_at', now.toIso8601String());
