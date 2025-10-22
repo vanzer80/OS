@@ -200,3 +200,4 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 \n# Temp edit files\nlib/features/orders/edit_order_screen.dart.backup\nlib/features/orders/edit_order_screen_fixed.dart\nlib/features/orders/edit_order_screen_new.dart\n
+flutter.zip

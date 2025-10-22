@@ -85,7 +85,7 @@ uuid: ^4.5.1                     # Geração de IDs
 - client_id: UUID (Foreign Key → clients)
 - order_number: VARCHAR(50) - Número único (OS-001, OS-002...)
 - type: ENUM('service', 'budget', 'sale')
-- status: ENUM('pending', 'in_progress', 'completed', 'cancelled')
+- status: ENUM('pending', 'awaiting_approval', 'awaiting_payment', 'in_progress', 'completed', 'paid', 'cancelled')
 - equipment: VARCHAR(255) - Equipamento/Marca
 - model: VARCHAR(255) - Modelo
 - description: TEXT - Descrição do serviço
@@ -135,6 +135,38 @@ uuid: ^4.5.1                     # Geração de IDs
 - Todas as tabelas possuem RLS habilitado
 - Usuários só acessam seus próprios dados
 - Políticas específicas para cada operação (SELECT, INSERT, UPDATE, DELETE)
+
+### ⚙️ Edge Function de Administração
+- Objetivo: executar operações privilegiadas sem expor `service_role`.
+- Validação: requer usuário autenticado com `user_metadata.is_admin = true`.
+- Operação implementada: `update_status` com regras de transição.
+- Endpoint: `functions.invoke('admin', {...})`.
+
+Configuração
+- Em `Project Settings → Functions → Secrets`, defina `SUPABASE_SERVICE_ROLE_KEY`.
+- `SUPABASE_URL` e `SUPABASE_ANON_KEY` já estão disponíveis no ambiente de funções.
+
+Exemplo (Flutter)
+```dart
+final res = await supabase.functions.invoke('admin', body: {
+  'action': 'update_status',
+  'order_id': orderId,
+  'status': status.dbName, // snake_case
+});
+if (res.data['ok'] == true) {
+  // sucesso
+}
+```
+
+Observações
+- Transições permitidas:
+  - `pending` → `awaiting_approval`/`awaiting_payment`/`in_progress`/`cancelled`
+  - `awaiting_approval` → `awaiting_payment`/`in_progress`/`cancelled`
+  - `awaiting_payment` → `in_progress`/`completed`/`paid`/`cancelled`
+  - `in_progress` → `completed`/`cancelled`
+  - `completed` → `paid`/`cancelled`
+  - `paid`/`cancelled` → sem transições
+- A função utiliza a service role para operações no banco, mas valida o token do usuário e exige perfil admin.
 
 ## 🚀 Funcionalidades Implementadas
 
@@ -408,10 +440,20 @@ flutter build web
   - `com.osexpresss.app.os_express_flutter://login-callback`
 - [x] App (Android): Intent-filter do deep link configurado no `AndroidManifest.xml`
 - [x] App: PDF com NotoSans + fontFallback (sem avisos Unicode) e seção "Fotos" com título/descrição
+- [x] Função "Transformar em Recibo": botão na tela de detalhes, geração de PDF de recibo com dados da ordem/cliente/empresa e visualização/ação de impressão/baixa
 
 Observações
 - Para maior privacidade no Storage, pode-se desabilitar leitura pública e utilizar URLs assinadas (não obrigatório no MVP).
 - Para iOS (TestFlight), adicionar o esquema iOS correspondente nas Redirect URLs quando for publicar.
+
+## 🧾 Transformar em Recibo
+
+- Abra uma ordem e use o botão `Transformar em Recibo` no topo ou nas ações grandes.
+- A tela de pré-visualização de recibo carrega dados da empresa, cliente e ordem.
+- Se existir pagamento registrado para a ordem, o recibo usa o valor do pagamento (método e data); caso contrário, utiliza o total da ordem.
+- Use as ações de `Imprimir` ou `Baixar` conforme o dispositivo.
+- O PDF segue a identidade visual do sistema e inclui cabeçalho com dados da empresa e bloco de confirmação do recebimento.
+- Tratamento de erros: se algo falhar ao carregar dados ou gerar PDF, uma mensagem descritiva é exibida.
 
 ## 🔐 Configuração de Auth (Supabase)
 
@@ -512,3 +554,20 @@ Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalh
 **Desenvolvido com ❤️ para modernizar oficinas mecânicas e prestadores de serviços.**
 
 *Última atualização: 27 de Setembro de 2025*
+
+## 🔄 CI/CD
+- O repositório utiliza um workflow de integração contínua em GitHub Actions que valida formatação, análise, testes e um build web de fumaça em todo push/PR.
+- Checks executados:
+  - `flutter format --set-exit-if-changed .`
+  - `flutter analyze`
+  - `flutter test --coverage`
+  - `flutter build web --release`
+- Como rodar localmente os mesmos checks:
+  - `flutter pub get`
+  - `flutter format --set-exit-if-changed .`
+  - `flutter analyze`
+  - `flutter test --coverage`
+  - `flutter build web --release`
+- Merges em `main/master` devem ocorrer apenas com todos os checks aprovados.
+- Atualizações automáticas de dependências:
+  - `Dependabot` semanal para `pub` (Dart/Flutter) e `github-actions`.

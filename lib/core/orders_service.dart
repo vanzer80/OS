@@ -23,7 +23,61 @@ final dashboardSummaryProvider = FutureProvider<DashboardSummary>((ref) async {
   final service = ref.read(ordersServiceProvider);
   return service.getDashboardSummary();
 });
-enum OrderStatus { pending, inProgress, completed, cancelled }
+
+enum OrderStatus {
+  pending,
+  awaitingApproval,
+  awaitingPayment,
+  awaitingPart,
+  inProgress,
+  completed,
+  cancelled,
+}
+
+extension OrderStatusDbX on OrderStatus {
+  String get dbName {
+    switch (this) {
+      case OrderStatus.pending:
+        return 'pending';
+      case OrderStatus.awaitingApproval:
+        return 'awaiting_approval';
+      case OrderStatus.awaitingPayment:
+        return 'awaiting_payment';
+      case OrderStatus.awaitingPart:
+        return 'awaiting_part';
+      case OrderStatus.inProgress:
+        return 'in_progress';
+      case OrderStatus.completed:
+        return 'completed';
+      case OrderStatus.cancelled:
+        return 'cancelled';
+    }
+  }
+
+  static OrderStatus fromDb(String? value) {
+    switch (value) {
+      case 'pending':
+        return OrderStatus.pending;
+      case 'awaiting_approval':
+        return OrderStatus.awaitingApproval;
+      case 'awaiting_payment':
+        return OrderStatus.awaitingPayment;
+      case 'awaiting_part':
+        return OrderStatus.awaitingPart;
+      case 'in_progress':
+        return OrderStatus.inProgress;
+      case 'completed':
+        return OrderStatus.completed;
+      case 'paid':
+        // Mapear registros legados para 'completed'
+        return OrderStatus.completed;
+      case 'cancelled':
+        return OrderStatus.cancelled;
+      default:
+        return OrderStatus.pending;
+    }
+  }
+}
 
 class OrderImageRecord {
   final String url;
@@ -38,7 +92,8 @@ class OrderImageRecord {
     this.description,
   });
 
-  factory OrderImageRecord.fromJson(Map<String, dynamic> json) => OrderImageRecord(
+  factory OrderImageRecord.fromJson(Map<String, dynamic> json) =>
+      OrderImageRecord(
         url: json['url'],
         position: json['position'] ?? 0,
         title: json['title'],
@@ -46,12 +101,12 @@ class OrderImageRecord {
       );
 
   Map<String, dynamic> toRow(String orderId) => {
-        'order_id': orderId,
-        'url': url,
-        'title': title,
-        'description': description,
-        'position': position,
-      };
+    'order_id': orderId,
+    'url': url,
+    'title': title,
+    'description': description,
+    'position': position,
+  };
 }
 
 class OrderItem {
@@ -87,8 +142,6 @@ class OrderItem {
       createdAt: DateTime.parse(json['created_at']),
     );
   }
-
-  
 
   Map<String, dynamic> toJson() {
     return {
@@ -177,10 +230,7 @@ class ServiceOrder {
         (e) => e.name == json['type'],
         orElse: () => OrderType.service,
       ),
-      status: OrderStatus.values.firstWhere(
-        (e) => e.name == json['status'],
-        orElse: () => OrderStatus.pending,
-      ),
+      status: OrderStatusDbX.fromDb(json['status'] as String?),
       equipment: json['equipment'],
       model: json['model'],
       brand: json['brand'], // Novo campo
@@ -203,7 +253,7 @@ class ServiceOrder {
       'client_id': clientId,
       'order_number': orderNumber,
       'type': type.name,
-      'status': status.name,
+      'status': status.dbName,
       'equipment': equipment,
       'model': model,
       'brand': brand, // Novo campo
@@ -266,10 +316,13 @@ class ServiceOrder {
 }
 
 class OrdersService {
-  final SupabaseClient _supabase = Supabase.instance.client;
+  final SupabaseClient _supabase;
+
+  OrdersService({SupabaseClient? supabase})
+    : _supabase = supabase ?? Supabase.instance.client;
 
   // Geração de numeração: XXXX-YY onde XXXX é seq única por ano (reinicia em 0100) e YY são os dois dígitos do ano
-  Future<(String,int,int)> _generateNumberByYear() async {
+  Future<(String, int, int)> _generateNumberByYear() async {
     try {
       final now = DateTime.now();
       final year = now.year;
@@ -326,7 +379,10 @@ class OrdersService {
       final fiscalYear = now.year;
       int seq;
       try {
-        final seqResp = await _supabase.rpc('get_next_order_seq', params: {'fy': fiscalYear});
+        final seqResp = await _supabase.rpc(
+          'get_next_order_seq',
+          params: {'fy': fiscalYear},
+        );
         seq = (seqResp as num).toInt();
       } catch (_) {
         // Fallback seguro: usa estratégia antiga por ano
@@ -336,9 +392,9 @@ class OrdersService {
       final yy = fiscalYear % 100;
       final orderNumber = '${seq.toString().padLeft(4, '0')}-$yy';
       // Garantir persistência dos campos de pagamento/garantia com fallback do perfil
-      String? _pt = order.paymentTerms?.trim();
-      String? _wt = order.warranty?.trim();
-      if ((_pt == null || _pt.isEmpty) || (_wt == null || _wt.isEmpty)) {
+      String? pt = order.paymentTerms?.trim();
+      String? wt = order.warranty?.trim();
+      if ((pt == null || pt.isEmpty) || (wt == null || wt.isEmpty)) {
         try {
           final user = _supabase.auth.currentUser;
           if (user != null) {
@@ -348,8 +404,12 @@ class OrdersService {
                 .eq('user_id', user.id)
                 .maybeSingle();
             if (profileRow != null) {
-              _pt = (_pt == null || _pt.isEmpty) ? (profileRow['default_payment_terms'] as String?) : _pt;
-              _wt = (_wt == null || _wt.isEmpty) ? (profileRow['default_warranty'] as String?) : _wt;
+              pt = (pt == null || pt.isEmpty)
+                  ? (profileRow['default_payment_terms'] as String?)
+                  : pt;
+              wt = (wt == null || wt.isEmpty)
+                  ? (profileRow['default_warranty'] as String?)
+                  : wt;
             }
           }
         } catch (_) {
@@ -360,12 +420,12 @@ class OrdersService {
       final orderData = {
         ...order.toJson(),
         'order_number': orderNumber,
-        'status': OrderStatus.pending.name,
+        'status': OrderStatus.pending.dbName,
         'fiscal_year': fiscalYear,
         'seq_per_year': seq,
         // Override explícito para garantir persistência
-        'payment_terms': _pt,
-        'warranty': _wt,
+        'payment_terms': pt,
+        'warranty': wt,
       };
 
       final response = await _supabase
@@ -404,15 +464,21 @@ class OrdersService {
       }
 
       if (status != null) {
-        queryBuilder = queryBuilder.eq('status', status.name);
+        queryBuilder = queryBuilder.eq('status', status.dbName);
       }
 
       if (startDate != null) {
-        queryBuilder = queryBuilder.gte('created_at', startDate.toIso8601String());
+        queryBuilder = queryBuilder.gte(
+          'created_at',
+          startDate.toIso8601String(),
+        );
       }
 
       if (endDate != null) {
-        queryBuilder = queryBuilder.lte('created_at', endDate.toIso8601String());
+        queryBuilder = queryBuilder.lte(
+          'created_at',
+          endDate.toIso8601String(),
+        );
       }
 
       final response = await queryBuilder.order('created_at', ascending: false);
@@ -449,6 +515,56 @@ class OrdersService {
       return ServiceOrder.fromJson(response);
     } catch (error) {
       throw Exception('Erro ao atualizar ordem: $error');
+    }
+  }
+
+  Future<ServiceOrder> updateOrderStatus(String id, OrderStatus status) async {
+    try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) {
+        throw Exception('[ERR_UNAUTH] Usuário não autenticado');
+      }
+      final response = await _supabase
+          .from('service_orders')
+          .update({
+            'status': status.dbName,
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('id', id)
+          .eq('user_id', user.id)
+          .select()
+          .single();
+      return ServiceOrder.fromJson(response);
+    } catch (error) {
+      // Tenta mapear erros do Postgrest com códigos de forma robusta
+      try {
+        final dynamic e = error; // PostgrestException esperado
+        final dynamic codeDyn = e.code; // pode ser String ou int
+        final String? msg = e.message as String?;
+        final String message = msg ?? error.toString();
+        final String? details = e.details as String?;
+        final String codeStr = codeDyn == null ? '' : codeDyn.toString();
+        final bool isCheckViolation =
+            codeStr == '23514' ||
+            message.toLowerCase().contains('violates check constraint') ||
+            message.toLowerCase().contains('check constraint') ||
+            (details?.toLowerCase().contains('check constraint') ?? false);
+        if (isCheckViolation) {
+          throw Exception(
+            '[ERR_STATUS_CHECK_VIOLATION] Status rejeitado pelo servidor. O status selecionado não é suportado pela configuração atual.',
+          );
+        }
+        if (codeStr.isNotEmpty) {
+          throw Exception(
+            '[ERR_POSTGREST_$codeStr] Falha ao atualizar status: $message',
+          );
+        }
+      } catch (_) {
+        // Ignora se não for PostgrestException
+      }
+      throw Exception(
+        '[ERR_UPDATE_STATUS_GENERIC] Erro ao atualizar status da ordem: $error',
+      );
     }
   }
 
@@ -497,10 +613,7 @@ class OrdersService {
 
   Future<void> updateOrderItem(String id, OrderItem item) async {
     try {
-      await _supabase
-          .from('order_items')
-          .update(item.toJson())
-          .eq('id', id);
+      await _supabase.from('order_items').update(item.toJson()).eq('id', id);
     } catch (error) {
       throw Exception('Erro ao atualizar item da ordem: $error');
     }
@@ -508,10 +621,7 @@ class OrdersService {
 
   Future<void> deleteOrderItem(String id) async {
     try {
-      await _supabase
-          .from('order_items')
-          .delete()
-          .eq('id', id);
+      await _supabase.from('order_items').delete().eq('id', id);
     } catch (error) {
       throw Exception('Erro ao deletar item da ordem: $error');
     }
@@ -519,10 +629,7 @@ class OrdersService {
 
   Future<void> deleteOrderItems(String orderId) async {
     try {
-      await _supabase
-          .from('order_items')
-          .delete()
-          .eq('order_id', orderId);
+      await _supabase.from('order_items').delete().eq('order_id', orderId);
     } catch (error) {
       throw Exception('Erro ao deletar itens da ordem: $error');
     }
@@ -543,20 +650,27 @@ class OrdersService {
     }
   }
 
-  Future<String> _signedUrlForImage(String bucket, String urlOrPath, {int expiresInSeconds = 3600}) async {
+  Future<String> _signedUrlForImage(
+    String bucket,
+    String urlOrPath, {
+    int expiresInSeconds = 3600,
+  }) async {
     final isUrl = urlOrPath.startsWith('http');
     final path = isUrl ? _pathFromPublicUrl(urlOrPath, bucket) : urlOrPath;
-    final signed = await _supabase.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
+    final signed = await _supabase.storage
+        .from(bucket)
+        .createSignedUrl(path, expiresInSeconds);
     return signed;
   }
 
-  Future<void> addOrderImagesWithMeta(String orderId, List<OrderImageRecord> records) async {
+  Future<void> addOrderImagesWithMeta(
+    String orderId,
+    List<OrderImageRecord> records,
+  ) async {
     try {
       if (records.isEmpty) return;
       final rows = records.map((r) => r.toRow(orderId)).toList();
-      await _supabase
-          .from('order_images')
-          .insert(rows);
+      await _supabase.from('order_images').insert(rows);
     } catch (error) {
       throw Exception('Erro ao salvar imagens da ordem: $error');
     }
@@ -576,13 +690,21 @@ class OrdersService {
         for (var i = 0; i < list.length; i++) {
           final json = list[i] as Map<String, dynamic>;
           final urlOrPath = json['url'] as String?;
-          final signed = urlOrPath == null ? null : await _signedUrlForImage(SupabaseConfig.imagesBucket, urlOrPath, expiresInSeconds: 60 * 60);
-          out.add(OrderImageRecord(
-            url: signed ?? urlOrPath ?? '',
-            position: json['position'] ?? i,
-            title: json['title'],
-            description: json['description'],
-          ));
+          final signed = urlOrPath == null
+              ? null
+              : await _signedUrlForImage(
+                  SupabaseConfig.imagesBucket,
+                  urlOrPath,
+                  expiresInSeconds: 60 * 60,
+                );
+          out.add(
+            OrderImageRecord(
+              url: signed ?? urlOrPath ?? '',
+              position: json['position'] ?? i,
+              title: json['title'],
+              description: json['description'],
+            ),
+          );
         }
         return out;
       }
@@ -609,10 +731,7 @@ class OrdersService {
 
   Future<void> deleteImagesForOrder(String orderId) async {
     try {
-      await _supabase
-          .from('order_images')
-          .delete()
-          .eq('order_id', orderId);
+      await _supabase.from('order_images').delete().eq('order_id', orderId);
     } catch (error) {
       throw Exception('Erro ao deletar imagens da ordem: $error');
     }
@@ -620,66 +739,242 @@ class OrdersService {
 
   // ===================== Dashboard Summary =====================
   Future<DashboardSummary> getDashboardSummary() async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Usuário não autenticado');
+
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+    final startOfDay = DateTime(now.year, now.month, now.day);
+
+    // Quantidade de ordens criadas hoje
+    final ordersTodayRows = await _supabase
+        .from('service_orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('created_at', startOfDay.toIso8601String());
+    final ordersToday = (ordersTodayRows as List).length;
+
+    // Pendentes (pending + in_progress)
+    final pendingRows = await _supabase
+        .from('service_orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .or('status.eq.pending,status.eq.in_progress');
+    final pending = (pendingRows as List).length;
+
+    // Concluídas
+    final completedRows = await _supabase
+        .from('service_orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('status', 'completed');
+    final completed = (completedRows as List).length;
+
+    // Receita do mês calculada por pagamentos (prioritário)
+    final paidRows = await _supabase
+        .from('payments')
+        .select('amount, paid_at')
+        .eq('user_id', user.id)
+        .gte('paid_at', startOfMonth.toIso8601String())
+        .lte('paid_at', now.toIso8601String());
+    final monthlyRevenue = (paidRows as List).fold<double>(
+      0.0,
+      (sum, row) => sum + (((row['amount'] as num?)?.toDouble()) ?? 0.0),
+    );
+
+    return DashboardSummary(
+      ordersToday: ordersToday,
+      pending: pending,
+      completed: completed,
+      monthlyRevenue: monthlyRevenue,
+    );
+  }
+
+  // ===================== Dashboard Aggregations =====================
+  Future<StatusBreakdown> getStatusBreakdown() async {
     try {
       final user = _supabase.auth.currentUser;
       if (user == null) throw Exception('Usuário não autenticado');
-      final now = DateTime.now();
-      final startOfToday = DateTime(now.year, now.month, now.day);
-      final startOfMonth = DateTime(now.year, now.month, 1);
-
-      // 1) Ordens criadas hoje
-      final todayRows = await _supabase
+      final rows = await _supabase
           .from('service_orders')
-          .select('id')
-          .eq('user_id', user.id)
-          .gte('created_at', startOfToday.toIso8601String());
-      final ordersToday = (todayRows as List).length;
-
-      // 2) Abertas/Pendentes: considerar pending + in_progress
-      final pendingRows = await _supabase
-          .from('service_orders')
-          .select('id')
-          .eq('user_id', user.id)
-          .or('status.eq.${OrderStatus.pending.name},status.eq.${OrderStatus.inProgress.name}');
-      final pending = (pendingRows as List).length;
-
-      // 3) Concluídas
-      final completedRows = await _supabase
-          .from('service_orders')
-          .select('id')
-          .eq('user_id', user.id)
-          .eq('status', OrderStatus.completed.name);
-      final completed = (completedRows as List).length;
-
-      // 4) Faturamento (mês atual): soma de total_amount para ordens concluídas no mês
-      final revenueRows = await _supabase
-          .from('service_orders')
-          .select('total_amount')
-          .eq('user_id', user.id)
-          .eq('status', OrderStatus.completed.name)
-          .gte('created_at', startOfMonth.toIso8601String())
-          .lte('created_at', now.toIso8601String());
-      final revenue = (revenueRows as List)
-          .fold<double>(0.0, (sum, row) => sum + (((row['total_amount'] as num?)?.toDouble()) ?? 0.0));
-
-      return DashboardSummary(
-        ordersToday: ordersToday,
+          .select('status')
+          .eq('user_id', user.id);
+      int pending = 0;
+      int awaitingApproval = 0;
+      int awaitingPayment = 0;
+      int awaitingPart = 0;
+      int inProgress = 0;
+      int completed = 0;
+      int cancelled = 0;
+      for (final row in (rows as List)) {
+        final s = (row['status'] as String?) ?? '';
+        final statusEnum = OrderStatusDbX.fromDb(s);
+        if (statusEnum == OrderStatus.pending) {
+          pending++;
+        } else if (statusEnum == OrderStatus.awaitingApproval) awaitingApproval++;
+        else if (statusEnum == OrderStatus.awaitingPayment) awaitingPayment++;
+        else if (statusEnum == OrderStatus.awaitingPart) awaitingPart++;
+        else if (statusEnum == OrderStatus.inProgress) inProgress++;
+        else if (statusEnum == OrderStatus.completed) completed++;
+        else if (statusEnum == OrderStatus.cancelled) cancelled++;
+      }
+      return StatusBreakdown(
         pending: pending,
+        awaitingApproval: awaitingApproval,
+        awaitingPayment: awaitingPayment,
+        awaitingPart: awaitingPart,
+        inProgress: inProgress,
         completed: completed,
-        monthlyRevenue: revenue,
+        cancelled: cancelled,
       );
     } catch (error) {
-      throw Exception('Erro ao carregar resumo do dashboard: $error');
+      throw Exception('Erro ao carregar distribuição de status: $error');
     }
   }
+
+  Future<List<MonthlyRevenuePoint>> getMonthlyRevenue({int months = 12}) async {
+    final user = _supabase.auth.currentUser;
+    if (user == null) throw Exception('Usuário não autenticado');
+    final now = DateTime.now();
+    final start = DateTime(now.year, now.month - months + 1, 1);
+
+    Future<List<MonthlyRevenuePoint>> fillFrom(Map<int, double> sums) async {
+      final List<MonthlyRevenuePoint> points =
+          sums.entries.map((e) {
+            final year = e.key ~/ 100;
+            final month = e.key % 100;
+            return MonthlyRevenuePoint(
+              year: year,
+              month: month,
+              value: e.value,
+            );
+          }).toList()..sort(
+            (a, b) => (a.year == b.year)
+                ? a.month.compareTo(b.month)
+                : a.year.compareTo(b.year),
+          );
+      final List<MonthlyRevenuePoint> filled = [];
+      for (int i = 0; i < months; i++) {
+        final date = DateTime(now.year, now.month - months + 1 + i, 1);
+        final existing = points.firstWhere(
+          (p) => p.year == date.year && p.month == date.month,
+          orElse: () => MonthlyRevenuePoint(
+            year: date.year,
+            month: date.month,
+            value: 0.0,
+          ),
+        );
+        filled.add(existing);
+      }
+      return filled;
+    }
+
+    try {
+      // Preferir pagamentos (faturamento real)
+      final rows = await _supabase
+          .from('payments')
+          .select('amount, paid_at')
+          .eq('user_id', user.id)
+          .gte('paid_at', start.toIso8601String())
+          .lte('paid_at', now.toIso8601String());
+      final Map<int, double> sums = {};
+      for (final row in (rows as List)) {
+        final paidAtStr = row['paid_at'] as String?;
+        final amount = ((row['amount'] as num?)?.toDouble()) ?? 0.0;
+        if (paidAtStr == null) continue;
+        final paidAt = DateTime.tryParse(paidAtStr);
+        if (paidAt == null) continue;
+        final key = paidAt.year * 100 + paidAt.month;
+        sums[key] = (sums[key] ?? 0.0) + amount;
+      }
+      return fillFrom(sums);
+    } catch (error) {
+      // Fallback: usar total_amount de ordens concluídas
+      try {
+        final rows = await _supabase
+            .from('service_orders')
+            .select('total_amount, created_at')
+            .eq('user_id', user.id)
+            .eq('status', OrderStatus.completed.dbName)
+            .gte('created_at', start.toIso8601String())
+            .lte('created_at', now.toIso8601String());
+        final Map<int, double> sums = {};
+        for (final row in (rows as List)) {
+          final createdAtStr = row['created_at'] as String?;
+          final amount = ((row['total_amount'] as num?)?.toDouble()) ?? 0.0;
+          if (createdAtStr == null) continue;
+          final createdAt = DateTime.tryParse(createdAtStr);
+          if (createdAt == null) continue;
+          final key = createdAt.year * 100 + createdAt.month;
+          sums[key] = (sums[key] ?? 0.0) + amount;
+        }
+        return fillFrom(sums);
+      } catch (fallbackError) {
+        throw Exception(
+          'Erro ao carregar faturamento mensal: $error | Fallback: $fallbackError',
+        );
+      }
+    }
+  }
+}
+
+class StatusBreakdown {
+  final int pending;
+  final int awaitingApproval;
+  final int awaitingPayment;
+  final int awaitingPart;
+  final int inProgress;
+  final int completed;
+  final int cancelled;
+  const StatusBreakdown({
+    required this.pending,
+    required this.awaitingApproval,
+    required this.awaitingPayment,
+    required this.awaitingPart,
+    required this.inProgress,
+    required this.completed,
+    required this.cancelled,
+  });
+  int get total =>
+      pending +
+      awaitingApproval +
+      awaitingPayment +
+      awaitingPart +
+      inProgress +
+      completed +
+      cancelled;
+}
+
+class MonthlyRevenuePoint {
+  final int year;
+  final int month;
+  final double value;
+  const MonthlyRevenuePoint({
+    required this.year,
+    required this.month,
+    required this.value,
+  });
 }
 
 // Providers
 final ordersServiceProvider = Provider<OrdersService>((ref) => OrdersService());
 
-final ordersProvider = StateNotifierProvider<OrdersNotifier, AsyncValue<List<ServiceOrder>>>((ref) {
-  return OrdersNotifier(ref.read(ordersServiceProvider));
+final statusBreakdownProvider = FutureProvider<StatusBreakdown>((ref) {
+  final service = ref.read(ordersServiceProvider);
+  return service.getStatusBreakdown();
 });
+
+final monthlyRevenueProvider = FutureProvider<List<MonthlyRevenuePoint>>((ref) {
+  final service = ref.read(ordersServiceProvider);
+  return service.getMonthlyRevenue(months: 12);
+});
+
+final ordersProvider =
+    StateNotifierProvider<OrdersNotifier, AsyncValue<List<ServiceOrder>>>((
+      ref,
+    ) {
+      return OrdersNotifier(ref.read(ordersServiceProvider));
+    });
 
 class OrdersNotifier extends StateNotifier<AsyncValue<List<ServiceOrder>>> {
   final OrdersService _ordersService;
@@ -734,6 +1029,23 @@ class OrdersNotifier extends StateNotifier<AsyncValue<List<ServiceOrder>>> {
       await loadOrders(); // Recarregar lista
     } catch (error, stackTrace) {
       state = AsyncValue.error(error, stackTrace);
+    }
+  }
+
+  Future<ServiceOrder> updateOrderStatus(String id, OrderStatus status) async {
+    try {
+      final updated = await _ordersService.updateOrderStatus(id, status);
+      await loadOrders();
+      return updated;
+    } catch (error) {
+      // Não alterar o estado global da lista ao falhar uma atualização de status
+      // para evitar que a tela entre em estado de erro completo. A UI chamadora
+      // deve tratar a falha (SnackBar, etc.). Mantemos o estado atual.
+      // Opcionalmente poderíamos logar o erro aqui.
+      // debugPrint('Falha ao atualizar status: $error');
+      // Preservar o estado anterior e propagar o erro.
+      // Não fazer: state = AsyncValue.error(error, stackTrace);
+      rethrow;
     }
   }
 
