@@ -82,6 +82,7 @@ pubspec.lock
 !**/ios/**/default.perspectivev3
 !**/ios/**/project.xcworkspace/xcuserdata/
 !**/ios/**/xcuserdata/
+!build/web/**
 
 # Supabase
 supabase/.branches
