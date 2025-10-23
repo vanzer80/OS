@@ -153,7 +153,9 @@ class FiltersState {
 }
 
 // Provider para estado dos filtros
-final filtersProvider = StateNotifierProvider<FiltersNotifier, FiltersState>((ref) {
+final filtersProvider = StateNotifierProvider<FiltersNotifier, FiltersState>((
+  ref,
+) {
   return FiltersNotifier();
 });
 

@@ -72,14 +72,12 @@ class PaymentsService {
     } catch (_) {}
   }
 
-
   void disposePaymentsRealtime() {
     try {
       _paymentsChannel?.unsubscribe();
       _paymentsChannel = null;
     } catch (_) {}
   }
-
 
   Future<bool> hasPaidPayment(String orderId) async {
     final user = _supabase.auth.currentUser;
@@ -131,7 +129,9 @@ class PaymentsService {
     }
     final status = (orderRow['status'] as String?) ?? '';
     if (status == 'cancelled') {
-      throw Exception('Não é possível registrar pagamento para ordem cancelada');
+      throw Exception(
+        'Não é possível registrar pagamento para ordem cancelada',
+      );
     }
 
     // Evita duplicidade de pagamento
@@ -157,4 +157,6 @@ class PaymentsService {
   }
 }
 
-final paymentsServiceProvider = Provider<PaymentsService>((ref) => PaymentsService());
+final paymentsServiceProvider = Provider<PaymentsService>(
+  (ref) => PaymentsService(),
+);

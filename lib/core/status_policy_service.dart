@@ -41,33 +41,39 @@ class StatusPolicyService {
       OrderStatus.completed,
       OrderStatus.cancelled,
     ],
-    OrderStatus.completed: [
-      OrderStatus.cancelled,
-    ],
+    OrderStatus.completed: [OrderStatus.cancelled],
     OrderStatus.cancelled: [],
   };
 
-  Future<List<OrderStatus>> getAllowedStatuses({bool forceRefresh = false, Future<dynamic> Function()? fetch}) async {
+  Future<List<OrderStatus>> getAllowedStatuses({
+    bool forceRefresh = false,
+    Future<dynamic> Function()? fetch,
+  }) async {
     if (!forceRefresh && _cache != null) return _cache!;
     try {
-      final data = await (fetch != null ? fetch() : _supabase.rpc('get_allowed_statuses'));
+      final data = await (fetch != null
+          ? fetch()
+          : _supabase.rpc('get_allowed_statuses'));
       if (data is List && data.isNotEmpty) {
         // Parse the malformed response from RPC
         final List<OrderStatus> statuses = [];
-        
+
         for (final item in data) {
           final str = item.toString();
           // Extract status values from malformed constraint expression
           // Expected format: "((status)::text=ANY((ARRAY[pending::charactervarying,in_progress::charactervarying,...]"
           if (str.contains('pending')) statuses.add(OrderStatus.pending);
-          if (str.contains('awaiting_approval')) statuses.add(OrderStatus.awaitingApproval);
-          if (str.contains('awaiting_payment')) statuses.add(OrderStatus.awaitingPayment);
-          if (str.contains('awaiting_part')) statuses.add(OrderStatus.awaitingPart);
+          if (str.contains('awaiting_approval'))
+            statuses.add(OrderStatus.awaitingApproval);
+          if (str.contains('awaiting_payment'))
+            statuses.add(OrderStatus.awaitingPayment);
+          if (str.contains('awaiting_part'))
+            statuses.add(OrderStatus.awaitingPart);
           if (str.contains('in_progress')) statuses.add(OrderStatus.inProgress);
           if (str.contains('completed')) statuses.add(OrderStatus.completed);
           if (str.contains('cancelled')) statuses.add(OrderStatus.cancelled);
         }
-        
+
         // Remove duplicates and ensure we have at least the basic statuses
         final uniqueStatuses = statuses.toSet().toList();
         if (uniqueStatuses.isNotEmpty) {

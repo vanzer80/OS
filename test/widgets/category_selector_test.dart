@@ -6,17 +6,33 @@ import 'package:os_express_flutter/core/finance_service.dart';
 
 void main() {
   group('CategorySelector Widget Tests', () {
-    testWidgets('should display dropdown with categories', (WidgetTester tester) async {
+    testWidgets('should display dropdown with categories', (
+      WidgetTester tester,
+    ) async {
       // Mock categories
       final mockCategories = [
-        FinanceCategory(id: '1', name: 'Alimentação', type: 'expense', userId: 'user1', createdAt: DateTime.now()),
-        FinanceCategory(id: '2', name: 'Transporte', type: 'expense', userId: 'user1', createdAt: DateTime.now()),
+        FinanceCategory(
+          id: '1',
+          name: 'Alimentação',
+          type: 'expense',
+          userId: 'user1',
+          createdAt: DateTime.now(),
+        ),
+        FinanceCategory(
+          id: '2',
+          name: 'Transporte',
+          type: 'expense',
+          userId: 'user1',
+          createdAt: DateTime.now(),
+        ),
       ];
 
       // Create a mock provider container
       final container = ProviderContainer(
         overrides: [
-          financeServiceProvider.overrideWith((ref) => MockFinanceService(mockCategories)),
+          financeServiceProvider.overrideWith(
+            (ref) => MockFinanceService(mockCategories),
+          ),
         ],
       );
 
@@ -41,12 +57,14 @@ void main() {
 
       // Verify that the dropdown is displayed
       expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
-      
+
       // Verify that categories are loaded
       expect(find.text('Selecione uma categoria'), findsOneWidget);
     });
 
-    testWidgets('should show error when required and no category selected', (WidgetTester tester) async {
+    testWidgets('should show error when required and no category selected', (
+      WidgetTester tester,
+    ) async {
       final container = ProviderContainer(
         overrides: [
           financeServiceProvider.overrideWith((ref) => MockFinanceService([])),
@@ -76,7 +94,9 @@ void main() {
       expect(find.text('Categoria é obrigatória'), findsOneWidget);
     });
 
-    testWidgets('should allow creating new category', (WidgetTester tester) async {
+    testWidgets('should allow creating new category', (
+      WidgetTester tester,
+    ) async {
       final container = ProviderContainer(
         overrides: [
           financeServiceProvider.overrideWith((ref) => MockFinanceService([])),

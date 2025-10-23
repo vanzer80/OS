@@ -7,7 +7,6 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Test padrão do template desabilitado por não refletir a UI atual.

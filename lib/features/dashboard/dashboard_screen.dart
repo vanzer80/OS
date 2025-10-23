@@ -117,13 +117,34 @@ class _SkeletonSummaryCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(width: 24, height: 24, decoration: BoxDecoration(color: base, borderRadius: BorderRadius.circular(6))),
+                Container(
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
                 const Spacer(),
-                Container(width: 48, height: 20, decoration: BoxDecoration(color: base, borderRadius: BorderRadius.circular(6))),
+                Container(
+                  width: 48,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 8),
-            Container(width: 100, height: 14, decoration: BoxDecoration(color: base, borderRadius: BorderRadius.circular(6))),
+            Container(
+              width: 100,
+              height: 14,
+              decoration: BoxDecoration(
+                color: base,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
           ],
         ),
       ),
@@ -240,9 +261,9 @@ class HomeTab extends ConsumerWidget {
             // Ações rápidas
             Text(
               'Ações Rápidas',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
 
@@ -340,229 +361,291 @@ class HomeTab extends ConsumerWidget {
             const SizedBox(height: 32),
             Text(
               'Gráficos',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
 
             // Distribuição de Status
-            ref.watch(statusBreakdownProvider).when(
-              data: (sb) => Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Distribuição por Status',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                      const SizedBox(height: 12),
-                      if (sb.total == 0)
-                        const Text('Sem ordens cadastradas.')
-                      else ...[
-                        Container(
-                          height: 18,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(6),
+            ref
+                .watch(statusBreakdownProvider)
+                .when(
+                  data: (sb) => Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Distribuição por Status',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
                           ),
-                          child: Row(
-                            children: [
-                              if (sb.pending > 0)
-                                Expanded(
-                                  flex: sb.pending,
-                                  child: Container(color: Colors.orange),
-                                ),
-                              if (sb.awaitingApproval > 0)
-                                Expanded(
-                                  flex: sb.awaitingApproval,
-                                  child: Container(color: Colors.amber),
-                                ),
-                              if (sb.awaitingPayment > 0)
-                                Expanded(
-                                  flex: sb.awaitingPayment,
-                                  child: Container(color: Colors.purple),
-                                ),
-                              if (sb.inProgress > 0)
-                                Expanded(
-                                  flex: sb.inProgress,
-                                  child: Container(color: Colors.blue),
-                                ),
-                              if (sb.completed > 0)
-                                Expanded(
-                                  flex: sb.completed,
-                                  child: Container(color: Colors.green),
-                                ),
+                          const SizedBox(height: 12),
+                          if (sb.total == 0)
+                            const Text('Sem ordens cadastradas.')
+                          else ...[
+                            Container(
+                              height: 18,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Row(
+                                children: [
+                                  if (sb.pending > 0)
+                                    Expanded(
+                                      flex: sb.pending,
+                                      child: Container(color: Colors.orange),
+                                    ),
+                                  if (sb.awaitingApproval > 0)
+                                    Expanded(
+                                      flex: sb.awaitingApproval,
+                                      child: Container(color: Colors.amber),
+                                    ),
+                                  if (sb.awaitingPayment > 0)
+                                    Expanded(
+                                      flex: sb.awaitingPayment,
+                                      child: Container(color: Colors.purple),
+                                    ),
+                                  if (sb.inProgress > 0)
+                                    Expanded(
+                                      flex: sb.inProgress,
+                                      child: Container(color: Colors.blue),
+                                    ),
+                                  if (sb.completed > 0)
+                                    Expanded(
+                                      flex: sb.completed,
+                                      child: Container(color: Colors.green),
+                                    ),
 
-                              if (sb.cancelled > 0)
-                                Expanded(
-                                  flex: sb.cancelled,
-                                  child: Container(color: Colors.red),
+                                  if (sb.cancelled > 0)
+                                    Expanded(
+                                      flex: sb.cancelled,
+                                      child: Container(color: Colors.red),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Wrap(
+                              spacing: 12,
+                              runSpacing: 8,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text('Pendente'),
+                                  ],
                                 ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 12,
-                          runSpacing: 8,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.orange))),
-                                SizedBox(width: 6),
-                                Text('Pendente'),
-                              ],
-                            ),
-                            Text(': ${sb.pending}'),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.amber))),
-                                SizedBox(width: 6),
-                                Text('Aguardando aprovação'),
-                              ],
-                            ),
-                            Text(': ${sb.awaitingApproval}'),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.purple))),
-                                SizedBox(width: 6),
-                                Text('Aguardando pagamento'),
-                              ],
-                            ),
-                            Text(': ${sb.awaitingPayment}'),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.blue))),
-                                SizedBox(width: 6),
-                                Text('Em andamento'),
-                              ],
-                            ),
-                            Text(': ${sb.inProgress}'),
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.green))),
-                                SizedBox(width: 6),
-                                Text('Concluída'),
-                              ],
-                            ),
-                            Text(': ${sb.completed}'),
+                                Text(': ${sb.pending}'),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.amber,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text('Aguardando aprovação'),
+                                  ],
+                                ),
+                                Text(': ${sb.awaitingApproval}'),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.purple,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text('Aguardando pagamento'),
+                                  ],
+                                ),
+                                Text(': ${sb.awaitingPayment}'),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text('Em andamento'),
+                                  ],
+                                ),
+                                Text(': ${sb.inProgress}'),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text('Concluída'),
+                                  ],
+                                ),
+                                Text(': ${sb.completed}'),
 
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: const [
-                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.red))),
-                                SizedBox(width: 6),
-                                Text('Cancelada'),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: const [
+                                    SizedBox(
+                                      width: 12,
+                                      height: 12,
+                                      child: DecoratedBox(
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 6),
+                                    Text('Cancelada'),
+                                  ],
+                                ),
+                                Text(': ${sb.cancelled}'),
                               ],
                             ),
-                            Text(': ${sb.cancelled}'),
                           ],
-                        ),
-                      ],
-                    ],
+                        ],
+                      ),
+                    ),
+                  ),
+                  loading: () => const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: LinearProgressIndicator(),
+                    ),
+                  ),
+                  error: (e, _) => Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('Erro ao carregar status: $e'),
+                    ),
                   ),
                 ),
-              ),
-              loading: () => const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: LinearProgressIndicator(),
-                ),
-              ),
-              error: (e, _) => Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Erro ao carregar status: $e'),
-                ),
-              ),
-            ),
 
             const SizedBox(height: 16),
 
             // Faturamento mensal
-            ref.watch(monthlyRevenueProvider).when(
-              data: (points) {
-                final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
-                final max = points
-                    .map((p) => p.value)
-                    .fold<double>(0.0, (prev, v) => v > prev ? v : prev);
-                return Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Faturamento por Mês (últimos 12)',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
+            ref
+                .watch(monthlyRevenueProvider)
+                .when(
+                  data: (points) {
+                    final currency = NumberFormat.simpleCurrency(
+                      locale: 'pt_BR',
+                    );
+                    final max = points
+                        .map((p) => p.value)
+                        .fold<double>(0.0, (prev, v) => v > prev ? v : prev);
+                    return Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Faturamento por Mês (últimos 12)',
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 180,
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  for (final p in points)
+                                    Expanded(
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 4,
+                                        ),
+                                        height: max <= 0
+                                            ? 0
+                                            : 150 * (p.value / max),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blueAccent,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 180,
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.end,
-                            children: [
-                              for (final p in points)
-                                Expanded(
-                                  child: Container(
-                                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                                    height: max <= 0 ? 0 : 150 * (p.value / max),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blueAccent,
-                                      borderRadius: BorderRadius.circular(4),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                for (final p in points)
+                                  Expanded(
+                                    child: Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                      ),
+                                      child: Text(
+                                        DateFormat(
+                                          'MM/yy',
+                                        ).format(DateTime(p.year, p.month)),
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
                                     ),
                                   ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            for (final p in points)
-                              Expanded(
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                                  child: Text(
-                                    DateFormat('MM/yy').format(DateTime(p.year, p.month)),
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(fontSize: 10),
-                                  ),
-                                ),
-                              ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text('Máximo: ${currency.format(max)}'),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Text('Máximo: ${currency.format(max)}'),
-                      ],
+                      ),
+                    );
+                  },
+                  loading: () => const Card(
+                    child: Padding(
+                      padding: EdgeInsets.all(16),
+                      child: LinearProgressIndicator(),
                     ),
                   ),
-                );
-              },
-              loading: () => const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(16),
-                  child: LinearProgressIndicator(),
+                  error: (e, _) => Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text('Erro ao carregar faturamento: $e'),
+                    ),
+                  ),
                 ),
-              ),
-              error: (e, _) => Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text('Erro ao carregar faturamento: $e'),
-                ),
-              ),
-            ),
           ],
         ),
       ),
@@ -655,9 +738,9 @@ class _QuickActionCard extends StatelessWidget {
               const SizedBox(height: 12),
               Text(
                 title,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 4),
@@ -727,7 +810,9 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(76),
+                fillColor: Theme.of(
+                  context,
+                ).colorScheme.surfaceContainerHighest.withAlpha(76),
               ),
             ),
           ),
@@ -793,8 +878,7 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (client.phone != null)
-                          Text(client.phone!),
+                        if (client.phone != null) Text(client.phone!),
                         if (client.email != null)
                           Text(
                             client.email!,
@@ -818,7 +902,10 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
                           value: 'delete',
                           child: ListTile(
                             leading: Icon(Icons.delete, color: Colors.red),
-                            title: Text('Excluir', style: TextStyle(color: Colors.red)),
+                            title: Text(
+                              'Excluir',
+                              style: TextStyle(color: Colors.red),
+                            ),
                             contentPadding: EdgeInsets.zero,
                           ),
                         ),
@@ -827,7 +914,8 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
                         if (value == 'edit') {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => AddClientScreen(client: client),
+                              builder: (context) =>
+                                  AddClientScreen(client: client),
                             ),
                           );
                         } else if (value == 'delete') {
@@ -835,22 +923,28 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
                             context: context,
                             builder: (context) => AlertDialog(
                               title: const Text('Confirmar exclusão'),
-                              content: Text('Deseja excluir o cliente ${client.name}?'),
+                              content: Text(
+                                'Deseja excluir o cliente ${client.name}?',
+                              ),
                               actions: [
                                 TextButton(
-                                  onPressed: () => Navigator.of(context).pop(false),
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(false),
                                   child: const Text('Cancelar'),
                                 ),
                                 TextButton(
-                                  onPressed: () => Navigator.of(context).pop(true),
+                                  onPressed: () =>
+                                      Navigator.of(context).pop(true),
                                   child: const Text('Excluir'),
                                 ),
                               ],
                             ),
                           );
-                          
+
                           if (confirm == true) {
-                            ref.read(clientsProvider.notifier).deleteClient(client.id);
+                            ref
+                                .read(clientsProvider.notifier)
+                                .deleteClient(client.id);
                           }
                         }
                       },
@@ -888,9 +982,7 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const AddClientScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const AddClientScreen()),
           );
         },
         child: const Icon(Icons.add),
@@ -923,10 +1015,9 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
   Widget build(BuildContext context) {
     final ordersAsync = ref.watch(ordersProvider);
     // Obter lista de clientes para mapear id->nome sem bloquear UI
-    final clientsList = ref.watch(clientsProvider).maybeWhen(
-      data: (c) => c,
-      orElse: () => const <Client>[],
-    );
+    final clientsList = ref
+        .watch(clientsProvider)
+        .maybeWhen(data: (c) => c, orElse: () => const <Client>[]);
     final Map<String, String> clientNameById = {
       for (final c in clientsList) c.id: c.name,
     };
@@ -947,21 +1038,25 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                     .count();
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('✅ Conexão OK! Ordens no DB: $response')),
+                    SnackBar(
+                      content: Text('✅ Conexão OK! Ordens no DB: $response'),
+                    ),
                   );
                 }
               } catch (error) {
                 if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('❌ Erro: $error')),
-                  );
+                  ScaffoldMessenger.of(
+                    context,
+                  ).showSnackBar(SnackBar(content: Text('❌ Erro: $error')));
                 }
               }
             },
             tooltip: 'Testar Conexão DB',
           ),
           IconButton(
-            icon: Icon(_showFilters ? Icons.filter_list_off : Icons.filter_list),
+            icon: Icon(
+              _showFilters ? Icons.filter_list_off : Icons.filter_list,
+            ),
             onPressed: () => setState(() => _showFilters = !_showFilters),
             tooltip: _showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros',
           ),
@@ -970,8 +1065,7 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
       body: Column(
         children: [
           // Filtros Expansíveis
-          if (_showFilters)
-            _buildFiltersSection(),
+          if (_showFilters) _buildFiltersSection(),
 
           // Lista de Ordens
           Expanded(
@@ -982,7 +1076,9 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                 final filtered = lowerQuery.isEmpty
                     ? orders
                     : orders.where((o) {
-                        final name = clientNameById[o.clientId ?? '']?.toLowerCase() ?? '';
+                        final name =
+                            clientNameById[o.clientId ?? '']?.toLowerCase() ??
+                            '';
                         return name.contains(lowerQuery);
                       }).toList();
                 if (orders.isEmpty) {
@@ -1016,15 +1112,12 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final result = await Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => const AddOrderScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const AddOrderScreen()),
           );
           if (result != null) {
-            ref.read(ordersProvider.notifier).loadOrders(
-              type: _selectedType,
-              status: _selectedStatus,
-            );
+            ref
+                .read(ordersProvider.notifier)
+                .loadOrders(type: _selectedType, status: _selectedStatus);
           }
         },
         label: const Text('Nova Ordem'),
@@ -1035,18 +1128,19 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
 
   Widget _buildFiltersSection() {
     final allowedStatusesAsync = ref.watch(allowedStatusesProvider);
-    final List<OrderStatus> allowedStatusesList = allowedStatusesAsync.maybeWhen(
-      data: (list) => list,
-      orElse: () => OrderStatus.values.toList(),
-    );
+    final List<OrderStatus> allowedStatusesList = allowedStatusesAsync
+        .maybeWhen(
+          data: (list) => list,
+          orElse: () => OrderStatus.values.toList(),
+        );
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(76),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withAlpha(76),
         border: Border(
-          bottom: BorderSide(
-            color: Theme.of(context).colorScheme.outline,
-          ),
+          bottom: BorderSide(color: Theme.of(context).colorScheme.outline),
         ),
       ),
       child: Column(
@@ -1057,9 +1151,9 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
             children: [
               Text(
                 'Filtros',
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
               TextButton(
                 onPressed: () {
@@ -1096,7 +1190,9 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                       },
                     )
                   : null,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
               filled: true,
               fillColor: Theme.of(context).colorScheme.surface,
             ),
@@ -1118,16 +1214,16 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                 label: 'Tipo',
                 value: _selectedType,
                 items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
+                  const DropdownMenuItem(value: null, child: Text('Todos')),
                   ...OrderType.values.map((type) {
                     return DropdownMenuItem(
                       value: type,
                       child: Text(
-                        type == OrderType.service ? 'Serviços' :
-                        type == OrderType.budget ? 'Orçamentos' : 'Vendas'
+                        type == OrderType.service
+                            ? 'Serviços'
+                            : type == OrderType.budget
+                            ? 'Orçamentos'
+                            : 'Vendas',
                       ),
                     );
                   }),
@@ -1142,10 +1238,7 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                 label: 'Status',
                 value: _selectedStatus,
                 items: [
-                  const DropdownMenuItem(
-                    value: null,
-                    child: Text('Todos'),
-                  ),
+                  const DropdownMenuItem(value: null, child: Text('Todos')),
                   ...allowedStatusesList.map((status) {
                     return DropdownMenuItem(
                       value: status,
@@ -1167,10 +1260,9 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () {
-                ref.read(ordersProvider.notifier).loadOrders(
-                  type: _selectedType,
-                  status: _selectedStatus,
-                );
+                ref
+                    .read(ordersProvider.notifier)
+                    .loadOrders(type: _selectedType, status: _selectedStatus);
               },
               icon: const Icon(Icons.search),
               label: const Text('Aplicar Filtros'),
@@ -1190,9 +1282,7 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline,
-        ),
+        border: Border.all(color: Theme.of(context).colorScheme.outline),
         borderRadius: BorderRadius.circular(8),
       ),
       child: DropdownButtonHideUnderline(
@@ -1256,7 +1346,11 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                 await ref.read(ordersProvider.notifier).deleteOrder(order.id);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Ordem ${order.orderNumber} excluída com sucesso!')),
+                    SnackBar(
+                      content: Text(
+                        'Ordem ${order.orderNumber} excluída com sucesso!',
+                      ),
+                    ),
                   );
                 }
               } catch (error) {
@@ -1278,19 +1372,22 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
     );
   }
 
-  Widget _buildOrdersList(List<ServiceOrder> orders, Map<String, String> clientNameById) {
+  Widget _buildOrdersList(
+    List<ServiceOrder> orders,
+    Map<String, String> clientNameById,
+  ) {
     // Tornar o menu reativo às mudanças de política de status
     final allowedStatusesAsyncForMenu = ref.watch(allowedStatusesProvider);
-    final List<OrderStatus> allowedForMenu = allowedStatusesAsyncForMenu.maybeWhen(
-      data: (list) => list,
-      orElse: () => OrderStatus.values.toList(),
-    );
+    final List<OrderStatus> allowedForMenu = allowedStatusesAsyncForMenu
+        .maybeWhen(
+          data: (list) => list,
+          orElse: () => OrderStatus.values.toList(),
+        );
     return RefreshIndicator(
       onRefresh: () async {
-        ref.read(ordersProvider.notifier).loadOrders(
-          type: _selectedType,
-          status: _selectedStatus,
-        );
+        ref
+            .read(ordersProvider.notifier)
+            .loadOrders(type: _selectedType, status: _selectedStatus);
       },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -1315,7 +1412,11 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                 ),
               ),
               title: Text(
-                '${order.orderNumber} - ${order.type == OrderType.service ? 'Serviço' : order.type == OrderType.budget ? 'Orçamento' : 'Venda'}',
+                '${order.orderNumber} - ${order.type == OrderType.service
+                    ? 'Serviço'
+                    : order.type == OrderType.budget
+                    ? 'Orçamento'
+                    : 'Venda'}',
                 style: const TextStyle(fontWeight: FontWeight.w600),
               ),
               subtitle: Column(
@@ -1325,10 +1426,8 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                     Text('Cliente: $clientName'),
                   if (order.equipment != null)
                     Text('Equipamento: ${order.equipment}'),
-                  if (order.model != null)
-                    Text('Modelo: ${order.model}'),
-                  if (order.brand != null)
-                    Text('Marca: ${order.brand}'),
+                  if (order.model != null) Text('Modelo: ${order.model}'),
+                  if (order.brand != null) Text('Marca: ${order.brand}'),
                   if (order.serialNumber != null)
                     Text('S/N: ${order.serialNumber}'),
                   Text(
@@ -1366,10 +1465,12 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                           ),
                         );
                         if (result != null) {
-                          ref.read(ordersProvider.notifier).loadOrders(
-                            type: _selectedType,
-                            status: _selectedStatus,
-                          );
+                          ref
+                              .read(ordersProvider.notifier)
+                              .loadOrders(
+                                type: _selectedType,
+                                status: _selectedStatus,
+                              );
                         }
                       } else if (value == 'delete') {
                         _showDeleteConfirmation(order);
@@ -1380,13 +1481,17 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                         if (!policy.isTransitionAllowed(order.status, target)) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("Transição de '${_getStatusText(order.status)}' para '${_getStatusText(target)}' não permitida."),
+                              content: Text(
+                                "Transição de '${_getStatusText(order.status)}' para '${_getStatusText(target)}' não permitida.",
+                              ),
                             ),
                           );
                           return;
                         }
                         try {
-                          await ref.read(ordersProvider.notifier).updateOrderStatus(order.id, target);
+                          await ref
+                              .read(ordersProvider.notifier)
+                              .updateOrderStatus(order.id, target);
                           // Atualiza gráficos
                           ref.refresh(statusBreakdownProvider);
                           ref.refresh(monthlyRevenueProvider);
@@ -1394,132 +1499,164 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                           // Atualiza políticas de status do menu
                           ref.refresh(allowedStatusesProvider);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Status da ordem atualizado.')),
+                            const SnackBar(
+                              content: Text('Status da ordem atualizado.'),
+                            ),
                           );
                         } catch (e) {
                           // Em caso de violação de constraint, atualiza políticas e mostra mensagem amigável
                           ref.refresh(allowedStatusesProvider);
                           final msg = e.toString();
-                          final friendly = msg.contains('[ERR_STATUS_CHECK_VIOLATION]')
+                          final friendly =
+                              msg.contains('[ERR_STATUS_CHECK_VIOLATION]')
                               ? 'O servidor rejeitou este status. Verifique as políticas/constraints e tente novamente.'
                               : msg;
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Falha ao atualizar status: $friendly')),
+                            SnackBar(
+                              content: Text(
+                                'Falha ao atualizar status: $friendly',
+                              ),
+                            ),
                           );
                         }
                       } else if (value == 'mark_paid') {
-                        final paymentsService = ref.read(paymentsServiceProvider);
+                        final paymentsService = ref.read(
+                          paymentsServiceProvider,
+                        );
                         try {
                           // Capturar observação do método (opcional)
                           final noteController = TextEditingController();
-                          final confirmed = await showDialog<bool>(
-                            context: context,
-                            builder: (ctx) => AlertDialog(
-                              title: const Text('Registrar Pagamento'),
-                              content: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Text('Confirme o registro de pagamento desta ordem.'),
-                                  const SizedBox(height: 12),
-                                  TextField(
-                                    controller: noteController,
-                                    decoration: const InputDecoration(
-                                      labelText: 'Observação do método (opcional)',
-                                      hintText: 'Ex: PIX Banco X, Dinheiro, Cartão Y',
-                                    ),
+                          final confirmed =
+                              await showDialog<bool>(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: const Text('Registrar Pagamento'),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Text(
+                                        'Confirme o registro de pagamento desta ordem.',
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextField(
+                                        controller: noteController,
+                                        decoration: const InputDecoration(
+                                          labelText:
+                                              'Observação do método (opcional)',
+                                          hintText:
+                                              'Ex: PIX Banco X, Dinheiro, Cartão Y',
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(ctx, false),
-                                  child: const Text('Cancelar'),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () =>
+                                          Navigator.pop(ctx, false),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    ElevatedButton(
+                                      onPressed: () => Navigator.pop(ctx, true),
+                                      child: const Text('Confirmar'),
+                                    ),
+                                  ],
                                 ),
-                                ElevatedButton(
-                                  onPressed: () => Navigator.pop(ctx, true),
-                                  child: const Text('Confirmar'),
-                                ),
-                              ],
-                            ),
-                          ) ?? false;
+                              ) ??
+                              false;
                           if (!confirmed) return;
 
                           await paymentsService.createPayment(
                             orderId: order.id,
                             amount: order.totalAmount,
                             method: 'pix',
-                            methodNote: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+                            methodNote: noteController.text.trim().isEmpty
+                                ? null
+                                : noteController.text.trim(),
                           );
                           // Ao pagar, concluir a ordem automaticamente
-                          await ref.read(ordersProvider.notifier).updateOrderStatus(order.id, OrderStatus.completed);
+                          await ref
+                              .read(ordersProvider.notifier)
+                              .updateOrderStatus(
+                                order.id,
+                                OrderStatus.completed,
+                              );
                           // Atualiza gráficos (status e faturamento)
                           ref.refresh(statusBreakdownProvider);
                           ref.refresh(monthlyRevenueProvider);
                           ref.refresh(dashboardSummaryProvider);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Pagamento registrado e ordem concluída.')),
+                            const SnackBar(
+                              content: Text(
+                                'Pagamento registrado e ordem concluída.',
+                              ),
+                            ),
                           );
                         } catch (e) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Falha ao registrar pagamento: $e')),
+                            SnackBar(
+                              content: Text('Falha ao registrar pagamento: $e'),
+                            ),
                           );
                         }
                       }
                     },
                     itemBuilder: (context) {
-                        final allowed = allowedForMenu;
-                        final items = <PopupMenuEntry<String>>[
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit, size: 20),
-                                SizedBox(width: 8),
-                                Text('Editar'),
-                              ],
-                            ),
+                      final allowed = allowedForMenu;
+                      final items = <PopupMenuEntry<String>>[
+                        const PopupMenuItem(
+                          value: 'edit',
+                          child: Row(
+                            children: [
+                              Icon(Icons.edit, size: 20),
+                              SizedBox(width: 8),
+                              Text('Editar'),
+                            ],
                           ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete, size: 20, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Excluir', style: TextStyle(color: Colors.red)),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                        ];
-                        for (final s in allowed) {
-                          items.add(
-                            PopupMenuItem(
-                              value: 'status_${s.dbName}',
-                              child: Row(
-                                children: [
-                                  Icon(_statusIconFor(s), size: 20),
-                                  const SizedBox(width: 8),
-                                  Text('Status: ${_getStatusText(s)}'),
-                                ],
+                        ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete, size: 20, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text(
+                                'Excluir',
+                                style: TextStyle(color: Colors.red),
                               ),
-                            ),
-                          );
-                        }
-                        items.add(const PopupMenuDivider());
+                            ],
+                          ),
+                        ),
+                        const PopupMenuDivider(),
+                      ];
+                      for (final s in allowed) {
                         items.add(
-                          const PopupMenuItem(
-                            value: 'mark_paid',
+                          PopupMenuItem(
+                            value: 'status_${s.dbName}',
                             child: Row(
                               children: [
-                                Icon(Icons.monetization_on, size: 20),
-                                SizedBox(width: 8),
-                                Text('Registrar Pagamento'),
+                                Icon(_statusIconFor(s), size: 20),
+                                const SizedBox(width: 8),
+                                Text('Status: ${_getStatusText(s)}'),
                               ],
                             ),
                           ),
                         );
-                        return items;
-                      },
+                      }
+                      items.add(const PopupMenuDivider());
+                      items.add(
+                        const PopupMenuItem(
+                          value: 'mark_paid',
+                          child: Row(
+                            children: [
+                              Icon(Icons.monetization_on, size: 20),
+                              SizedBox(width: 8),
+                              Text('Registrar Pagamento'),
+                            ],
+                          ),
+                        ),
+                      );
+                      return items;
+                    },
                   ),
                 ],
               ),
@@ -1550,10 +1687,9 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              ref.read(ordersProvider.notifier).loadOrders(
-                type: _selectedType,
-                status: _selectedStatus,
-              );
+              ref
+                  .read(ordersProvider.notifier)
+                  .loadOrders(type: _selectedType, status: _selectedStatus);
             },
             child: const Text('Tentar novamente'),
           ),
@@ -1618,10 +1754,7 @@ class ProfileTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Perfil'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Perfil'), centerTitle: true),
       body: ListView(
         children: [
           const SizedBox(height: 8),

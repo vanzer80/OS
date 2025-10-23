@@ -11,16 +11,16 @@ import 'features/dashboard/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Inicializar handler de erros
   ErrorHandler.initialize();
-  
+
   // Inicializar Supabase
   await Supabase.initialize(
     url: SupabaseConfig.supabaseUrl,
     anonKey: SupabaseConfig.supabaseAnonKey,
   );
-  
+
   runApp(const ProviderScope(child: OSExpressApp()));
 }
 
@@ -31,7 +31,7 @@ class OSExpressApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Inicializar analytics
     final analytics = ref.read(analyticsServiceProvider);
-    
+
     return ErrorBoundary(
       child: MaterialApp(
         title: 'OS Express - Sistema de Ordens de Serviço',
@@ -52,9 +52,7 @@ class OSExpressApp extends ConsumerWidget {
         ),
         themeMode: ThemeMode.system,
         home: const AuthWrapper(),
-        navigatorObservers: [
-          AnalyticsNavigatorObserver(analytics),
-        ],
+        navigatorObservers: [AnalyticsNavigatorObserver(analytics)],
       ),
     );
   }
@@ -63,9 +61,9 @@ class OSExpressApp extends ConsumerWidget {
 /// Observer para rastrear navegação entre telas
 class AnalyticsNavigatorObserver extends NavigatorObserver {
   final AnalyticsService analytics;
-  
+
   AnalyticsNavigatorObserver(this.analytics);
-  
+
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
@@ -73,7 +71,7 @@ class AnalyticsNavigatorObserver extends NavigatorObserver {
       analytics.trackPageView(route.settings.name!);
     }
   }
-  
+
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPop(route, previousRoute);
@@ -90,21 +88,17 @@ class AuthWrapper extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(supabaseAuthStateProvider);
-    
+
     // Se está carregando, mostra loading
     if (authState.isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
+
     // Se está autenticado, vai para o dashboard
     if (authState.isAuthenticated) {
       return const DashboardScreen();
     }
-    
+
     // Se não está autenticado, mostra tela de boas-vindas
     return const WelcomeScreen();
   }
@@ -137,7 +131,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              
+
               // Título
               Text(
                 'OS Express',
@@ -147,7 +141,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8),
-              
+
               // Subtítulo
               Text(
                 'Sistema para Ordens de Serviço,\nOrçamentos e Vendas',
@@ -157,7 +151,7 @@ class WelcomeScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 48),
-              
+
               // Botão Entrar
               SizedBox(
                 width: double.infinity,
@@ -179,15 +173,12 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'Entrar',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
-              
+
               // Botão Criar Conta
               SizedBox(
                 width: double.infinity,
@@ -212,10 +203,7 @@ class WelcomeScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     'Criar Conta',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),

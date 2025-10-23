@@ -15,10 +15,12 @@ class ReceiptPdfPreviewScreen extends ConsumerStatefulWidget {
   const ReceiptPdfPreviewScreen({super.key, required this.order});
 
   @override
-  ConsumerState<ReceiptPdfPreviewScreen> createState() => _ReceiptPdfPreviewScreenState();
+  ConsumerState<ReceiptPdfPreviewScreen> createState() =>
+      _ReceiptPdfPreviewScreenState();
 }
 
-class _ReceiptPdfPreviewScreenState extends ConsumerState<ReceiptPdfPreviewScreen> {
+class _ReceiptPdfPreviewScreenState
+    extends ConsumerState<ReceiptPdfPreviewScreen> {
   Uint8List? _pdfBytes;
   bool _loading = true;
   String? _error;
@@ -45,9 +47,12 @@ class _ReceiptPdfPreviewScreenState extends ConsumerState<ReceiptPdfPreviewScree
         throw Exception('Ordem sem cliente associado');
       }
       final client = await clientsService.getClientById(clientId);
-      final company = await companyService.getProfile() ??
+      final company =
+          await companyService.getProfile() ??
           CompanyProfile(userId: '', name: 'Empresa', phone: null);
-      final payments = await paymentsService.getPaymentsByOrder(widget.order.id);
+      final payments = await paymentsService.getPaymentsByOrder(
+        widget.order.id,
+      );
 
       final pdfBytes = await receiptPdfService.buildReceiptPdf(
         company: company,
@@ -81,36 +86,40 @@ class _ReceiptPdfPreviewScreenState extends ConsumerState<ReceiptPdfPreviewScree
       await Printing.sharePdf(bytes: _pdfBytes!, filename: fileName);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha ao compartilhar: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Falha ao compartilhar: $e')));
     }
   }
 
   Future<void> _shareWhatsApp() async {
     try {
-      final text = Uri.encodeComponent('Recibo da Ordem ${widget.order.orderNumber}');
+      final text = Uri.encodeComponent(
+        'Recibo da Ordem ${widget.order.orderNumber}',
+      );
       final url = Uri.parse('https://wa.me/?text=$text');
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha ao abrir WhatsApp: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Falha ao abrir WhatsApp: $e')));
     }
   }
 
   Future<void> _shareEmail() async {
     try {
       final subject = Uri.encodeComponent('Recibo ${widget.order.orderNumber}');
-      final body = Uri.encodeComponent('Segue o recibo em anexo. Caso não abra, use o botão Baixar/Compartilhar para salvar o PDF.');
+      final body = Uri.encodeComponent(
+        'Segue o recibo em anexo. Caso não abra, use o botão Baixar/Compartilhar para salvar o PDF.',
+      );
       final uri = Uri.parse('mailto:?subject=$subject&body=$body');
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Falha ao abrir Email: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Falha ao abrir Email: $e')));
     }
   }
 
@@ -125,7 +134,9 @@ class _ReceiptPdfPreviewScreenState extends ConsumerState<ReceiptPdfPreviewScree
             ListTile(
               leading: const Icon(Icons.share),
               title: const Text('Compartilhar (PDF)'),
-              subtitle: const Text('Usa compartilhamento nativo com o arquivo PDF'),
+              subtitle: const Text(
+                'Usa compartilhamento nativo com o arquivo PDF',
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _shareGeneric();
@@ -134,7 +145,9 @@ class _ReceiptPdfPreviewScreenState extends ConsumerState<ReceiptPdfPreviewScree
             ListTile(
               leading: const Icon(Icons.email_outlined),
               title: const Text('Email'),
-              subtitle: const Text('Abre o cliente de email para enviar o recibo'),
+              subtitle: const Text(
+                'Abre o cliente de email para enviar o recibo',
+              ),
               onTap: () {
                 Navigator.pop(context);
                 _shareEmail();
@@ -181,15 +194,15 @@ class _ReceiptPdfPreviewScreenState extends ConsumerState<ReceiptPdfPreviewScree
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(child: Text('Erro ao gerar recibo: $_error'))
-              : _pdfBytes == null
-                  ? const Center(child: Text('PDF não disponível'))
-                  : PdfPreview(
-                      build: (format) async => _pdfBytes!,
-                      allowSharing: true,
-                      canChangeOrientation: false,
-                      canChangePageFormat: false,
-                    ),
+          ? Center(child: Text('Erro ao gerar recibo: $_error'))
+          : _pdfBytes == null
+          ? const Center(child: Text('PDF não disponível'))
+          : PdfPreview(
+              build: (format) async => _pdfBytes!,
+              allowSharing: true,
+              canChangeOrientation: false,
+              canChangePageFormat: false,
+            ),
     );
   }
 }

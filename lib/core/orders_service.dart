@@ -811,12 +811,18 @@ class OrdersService {
         final statusEnum = OrderStatusDbX.fromDb(s);
         if (statusEnum == OrderStatus.pending) {
           pending++;
-        } else if (statusEnum == OrderStatus.awaitingApproval) awaitingApproval++;
-        else if (statusEnum == OrderStatus.awaitingPayment) awaitingPayment++;
-        else if (statusEnum == OrderStatus.awaitingPart) awaitingPart++;
-        else if (statusEnum == OrderStatus.inProgress) inProgress++;
-        else if (statusEnum == OrderStatus.completed) completed++;
-        else if (statusEnum == OrderStatus.cancelled) cancelled++;
+        } else if (statusEnum == OrderStatus.awaitingApproval)
+          awaitingApproval++;
+        else if (statusEnum == OrderStatus.awaitingPayment)
+          awaitingPayment++;
+        else if (statusEnum == OrderStatus.awaitingPart)
+          awaitingPart++;
+        else if (statusEnum == OrderStatus.inProgress)
+          inProgress++;
+        else if (statusEnum == OrderStatus.completed)
+          completed++;
+        else if (statusEnum == OrderStatus.cancelled)
+          cancelled++;
       }
       return StatusBreakdown(
         pending: pending,

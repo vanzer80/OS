@@ -30,29 +30,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final result = await ref.read(supabaseAuthStateProvider.notifier).signIn(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
-      
+      final result = await ref
+          .read(supabaseAuthStateProvider.notifier)
+          .signIn(_emailController.text.trim(), _passwordController.text);
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message)),
-        );
-        
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result.message)));
+
         if (result.success) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const DashboardScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         }
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro inesperado: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro inesperado: $error')));
       }
     } finally {
       if (mounted) {
@@ -67,17 +64,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final authService = ref.read(supabaseAuthServiceProvider);
       final result = await authService.signInWithGoogle();
-      
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.message)),
-        );
-        
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(result.message)));
+
         if (result.success) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(
-              builder: (context) => const DashboardScreen(),
-            ),
+            MaterialPageRoute(builder: (context) => const DashboardScreen()),
           );
         }
       }
@@ -97,10 +92,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Entrar'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Entrar'), centerTitle: true),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -110,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 32),
-                
+
                 // Logo
                 Container(
                   width: 80,
@@ -126,7 +118,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 32),
-                
+
                 // Email Field
                 TextFormField(
                   controller: _emailController,
@@ -141,14 +133,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Por favor, digite seu email';
                     }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    if (!RegExp(
+                      r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                    ).hasMatch(value)) {
                       return 'Digite um email válido';
                     }
                     return null;
                   },
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Password Field
                 TextFormField(
                   controller: _passwordController,
@@ -159,7 +153,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     prefixIcon: const Icon(Icons.lock_outlined),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                        _obscurePassword
+                            ? Icons.visibility
+                            : Icons.visibility_off,
                       ),
                       onPressed: () {
                         setState(() => _obscurePassword = !_obscurePassword);
@@ -178,7 +174,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   },
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Login Button
                 SizedBox(
                   height: 56,
@@ -203,7 +199,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Divider
                 Row(
                   children: [
@@ -221,7 +217,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                
+
                 // Google Sign In Button
                 SizedBox(
                   height: 56,
@@ -247,7 +243,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                
+
                 // Register Link
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

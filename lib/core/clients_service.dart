@@ -87,9 +87,7 @@ class ClientsService {
           .eq('user_id', user.id)
           .order('created_at', ascending: false);
 
-      return (response as List)
-          .map((json) => Client.fromJson(json))
-          .toList();
+      return (response as List).map((json) => Client.fromJson(json)).toList();
     } catch (error) {
       throw Exception('Erro ao buscar clientes: $error');
     }
@@ -175,9 +173,7 @@ class ClientsService {
           .or('name.ilike.%$query%,email.ilike.%$query%,phone.ilike.%$query%')
           .order('created_at', ascending: false);
 
-      return (response as List)
-          .map((json) => Client.fromJson(json))
-          .toList();
+      return (response as List).map((json) => Client.fromJson(json)).toList();
     } catch (error) {
       throw Exception('Erro ao buscar clientes: $error');
     }
@@ -185,11 +181,14 @@ class ClientsService {
 }
 
 // Providers
-final clientsServiceProvider = Provider<ClientsService>((ref) => ClientsService());
+final clientsServiceProvider = Provider<ClientsService>(
+  (ref) => ClientsService(),
+);
 
-final clientsProvider = StateNotifierProvider<ClientsNotifier, AsyncValue<List<Client>>>((ref) {
-  return ClientsNotifier(ref.read(clientsServiceProvider));
-});
+final clientsProvider =
+    StateNotifierProvider<ClientsNotifier, AsyncValue<List<Client>>>((ref) {
+      return ClientsNotifier(ref.read(clientsServiceProvider));
+    });
 
 class ClientsNotifier extends StateNotifier<AsyncValue<List<Client>>> {
   final ClientsService _clientsService;

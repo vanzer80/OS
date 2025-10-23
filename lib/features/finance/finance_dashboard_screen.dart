@@ -15,10 +15,7 @@ class FinanceDashboardScreen extends ConsumerWidget {
     final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Financeiro'),
-        centerTitle: true,
-      ),
+      appBar: AppBar(title: const Text('Financeiro'), centerTitle: true),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -80,12 +77,19 @@ class FinanceDashboardScreen extends ConsumerWidget {
             const SizedBox(height: 24),
             Text(
               'Faturamento x Despesas (últimos meses)',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
             monthlyAsync.when(
               data: (points) {
-                final max = points.map((p) => p.incomeTotal > p.expenseTotal ? p.incomeTotal : p.expenseTotal)
+                final max = points
+                    .map(
+                      (p) => p.incomeTotal > p.expenseTotal
+                          ? p.incomeTotal
+                          : p.expenseTotal,
+                    )
                     .fold<double>(0.0, (prev, v) => v > prev ? v : prev);
                 return Card(
                   child: Padding(
@@ -104,13 +108,27 @@ class FinanceDashboardScreen extends ConsumerWidget {
                                     mainAxisAlignment: MainAxisAlignment.end,
                                     children: [
                                       Container(
-                                        height: max <= 0 ? 0 : 140 * (p.incomeTotal / max),
-                                        decoration: BoxDecoration(color: Colors.green, borderRadius: BorderRadius.circular(4)),
+                                        height: max <= 0
+                                            ? 0
+                                            : 140 * (p.incomeTotal / max),
+                                        decoration: BoxDecoration(
+                                          color: Colors.green,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
                                       ),
                                       const SizedBox(height: 4),
                                       Container(
-                                        height: max <= 0 ? 0 : 140 * (p.expenseTotal / max),
-                                        decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(4)),
+                                        height: max <= 0
+                                            ? 0
+                                            : 140 * (p.expenseTotal / max),
+                                        decoration: BoxDecoration(
+                                          color: Colors.redAccent,
+                                          borderRadius: BorderRadius.circular(
+                                            4,
+                                          ),
+                                        ),
                                       ),
                                     ],
                                   ),
@@ -124,9 +142,13 @@ class FinanceDashboardScreen extends ConsumerWidget {
                             for (final p in points)
                               Expanded(
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                  ),
                                   child: Text(
-                                    DateFormat('MM/yy').format(DateTime(p.year, p.month)),
+                                    DateFormat(
+                                      'MM/yy',
+                                    ).format(DateTime(p.year, p.month)),
                                     textAlign: TextAlign.center,
                                     style: const TextStyle(fontSize: 10),
                                   ),
@@ -144,7 +166,12 @@ class FinanceDashboardScreen extends ConsumerWidget {
             ),
 
             const SizedBox(height: 24),
-            Text('Ações Rápidas', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              'Ações Rápidas',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             Row(
               children: [
@@ -156,7 +183,9 @@ class FinanceDashboardScreen extends ConsumerWidget {
                     icon: Icons.remove_circle,
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const AddExpenseScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const AddExpenseScreen(),
+                        ),
                       );
                     },
                   ),
@@ -170,7 +199,9 @@ class FinanceDashboardScreen extends ConsumerWidget {
                     icon: Icons.receipt_long,
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const FinanceTransactionsScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const FinanceTransactionsScreen(),
+                        ),
                       );
                     },
                   ),
@@ -189,7 +220,12 @@ class _SummaryCard extends StatelessWidget {
   final String value;
   final Color color;
   final IconData icon;
-  const _SummaryCard({required this.title, required this.value, required this.color, required this.icon});
+  const _SummaryCard({
+    required this.title,
+    required this.value,
+    required this.color,
+    required this.icon,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -198,15 +234,29 @@ class _SummaryCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
-            CircleAvatar(backgroundColor: color.withOpacity(0.15), child: Icon(icon, color: color)),
+            CircleAvatar(
+              backgroundColor: color.withOpacity(0.15),
+              child: Icon(icon, color: color),
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                  Text(
+                    title,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
                   const SizedBox(height: 6),
-                  Text(value, style: Theme.of(context).textTheme.titleLarge?.copyWith(color: color, fontWeight: FontWeight.bold)),
+                  Text(
+                    value,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: color,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -240,15 +290,26 @@ class _QuickActionCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(backgroundColor: color.withOpacity(0.15), child: Icon(icon, color: color)),
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.15),
+                child: Icon(icon, color: color),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   ],
                 ),
               ),

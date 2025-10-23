@@ -10,13 +10,14 @@ class AnalyticsService {
   AnalyticsService._internal();
 
   // Configurações
-  static const String _analyticsEndpoint = 'https://api.vercel.com/v1/analytics';
+  static const String _analyticsEndpoint =
+      'https://api.vercel.com/v1/analytics';
   static const bool _enableAnalytics = kReleaseMode; // Apenas em produção
 
   /// Registra evento de página visitada
   Future<void> trackPageView(String pageName) async {
     if (!_enableAnalytics) return;
-    
+
     try {
       await _sendEvent('page_view', {
         'page_name': pageName,
@@ -31,9 +32,12 @@ class AnalyticsService {
   }
 
   /// Registra evento de ação do usuário
-  Future<void> trackUserAction(String action, {Map<String, dynamic>? properties}) async {
+  Future<void> trackUserAction(
+    String action, {
+    Map<String, dynamic>? properties,
+  }) async {
     if (!_enableAnalytics) return;
-    
+
     try {
       await _sendEvent('user_action', {
         'action': action,
@@ -48,9 +52,13 @@ class AnalyticsService {
   }
 
   /// Registra erro da aplicação
-  Future<void> trackError(String error, {String? stackTrace, Map<String, dynamic>? context}) async {
+  Future<void> trackError(
+    String error, {
+    String? stackTrace,
+    Map<String, dynamic>? context,
+  }) async {
     if (!_enableAnalytics) return;
-    
+
     try {
       await _sendEvent('error', {
         'error_message': error,
@@ -67,9 +75,13 @@ class AnalyticsService {
   }
 
   /// Registra métricas de performance
-  Future<void> trackPerformance(String metric, double value, {String? unit}) async {
+  Future<void> trackPerformance(
+    String metric,
+    double value, {
+    String? unit,
+  }) async {
     if (!_enableAnalytics) return;
-    
+
     try {
       await _sendEvent('performance', {
         'metric_name': metric,
@@ -87,7 +99,7 @@ class AnalyticsService {
   /// Registra evento de login
   Future<void> trackLogin(String method) async {
     if (!_enableAnalytics) return;
-    
+
     try {
       await _sendEvent('login', {
         'method': method,
@@ -103,7 +115,7 @@ class AnalyticsService {
   /// Registra evento de logout
   Future<void> trackLogout() async {
     if (!_enableAnalytics) return;
-    
+
     try {
       await _sendEvent('logout', {
         'timestamp': DateTime.now().toIso8601String(),
@@ -118,7 +130,7 @@ class AnalyticsService {
   /// Registra criação de ordem de serviço
   Future<void> trackOrderCreated(String orderId) async {
     if (!_enableAnalytics) return;
-    
+
     try {
       await _sendEvent('order_created', {
         'order_id': orderId,
@@ -134,7 +146,7 @@ class AnalyticsService {
   /// Registra feedback do usuário
   Future<void> trackFeedback(String type, String message, {int? rating}) async {
     if (!_enableAnalytics) return;
-    
+
     try {
       await _sendEvent('feedback', {
         'type': type,
@@ -156,7 +168,7 @@ class AnalyticsService {
     try {
       // Para o período de testes, vamos usar um endpoint simples
       // Em produção, você pode integrar com Google Analytics, Mixpanel, etc.
-      
+
       final payload = {
         'event_type': eventType,
         'data': data,
@@ -174,7 +186,7 @@ class AnalyticsService {
       if (kReleaseMode) {
         // Implementar integração com serviço de analytics real
         // Exemplo: Google Analytics, Mixpanel, Amplitude, etc.
-        
+
         // Por enquanto, apenas log no console do navegador
         if (kIsWeb) {
           // No Flutter Web, podemos usar window.console.log
@@ -209,7 +221,11 @@ mixin AnalyticsMixin {
   }
 
   /// Registra erro
-  void trackError(String error, {String? stackTrace, Map<String, dynamic>? context}) {
+  void trackError(
+    String error, {
+    String? stackTrace,
+    Map<String, dynamic>? context,
+  }) {
     analytics.trackError(error, stackTrace: stackTrace, context: context);
   }
 }
@@ -220,14 +236,17 @@ class PerformanceTracker {
   final DateTime _startTime;
   final AnalyticsService _analytics;
 
-  PerformanceTracker(this._metricName) 
+  PerformanceTracker(this._metricName)
     : _startTime = DateTime.now(),
       _analytics = AnalyticsService();
 
   /// Finaliza a medição e envia a métrica
   void finish() {
     final duration = DateTime.now().difference(_startTime);
-    _analytics.trackPerformance(_metricName, duration.inMilliseconds.toDouble());
+    _analytics.trackPerformance(
+      _metricName,
+      duration.inMilliseconds.toDouble(),
+    );
   }
 }
 

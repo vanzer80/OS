@@ -17,20 +17,20 @@ class FinanceCategory {
   });
 
   factory FinanceCategory.fromMap(Map<String, dynamic> m) => FinanceCategory(
-        id: m['id'] as String,
-        userId: m['user_id'] as String,
-        name: m['name'] as String,
-        type: m['type'] as String,
-        createdAt: DateTime.parse(m['created_at'] as String),
-      );
+    id: m['id'] as String,
+    userId: m['user_id'] as String,
+    name: m['name'] as String,
+    type: m['type'] as String,
+    createdAt: DateTime.parse(m['created_at'] as String),
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'user_id': userId,
-        'name': name,
-        'type': type,
-        'created_at': createdAt.toIso8601String(),
-      };
+    'id': id,
+    'user_id': userId,
+    'name': name,
+    'type': type,
+    'created_at': createdAt.toIso8601String(),
+  };
 }
 
 class Expense {
@@ -57,28 +57,28 @@ class Expense {
   });
 
   factory Expense.fromMap(Map<String, dynamic> m) => Expense(
-        id: m['id'] as String,
-        userId: m['user_id'] as String,
-        categoryId: m['category_id'] as String?,
-        description: m['description'] as String,
-        amount: (m['amount'] as num).toDouble(),
-        expenseDate: DateTime.parse(m['expense_date'] as String),
-        note: m['note'] as String?,
-        createdAt: DateTime.parse(m['created_at'] as String),
-        updatedAt: DateTime.parse(m['updated_at'] as String),
-      );
+    id: m['id'] as String,
+    userId: m['user_id'] as String,
+    categoryId: m['category_id'] as String?,
+    description: m['description'] as String,
+    amount: (m['amount'] as num).toDouble(),
+    expenseDate: DateTime.parse(m['expense_date'] as String),
+    note: m['note'] as String?,
+    createdAt: DateTime.parse(m['created_at'] as String),
+    updatedAt: DateTime.parse(m['updated_at'] as String),
+  );
 
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'user_id': userId,
-        'category_id': categoryId,
-        'description': description,
-        'amount': amount,
-        'expense_date': expenseDate.toIso8601String(),
-        'note': note,
-        'created_at': createdAt.toIso8601String(),
-        'updated_at': updatedAt.toIso8601String(),
-      };
+    'id': id,
+    'user_id': userId,
+    'category_id': categoryId,
+    'description': description,
+    'amount': amount,
+    'expense_date': expenseDate.toIso8601String(),
+    'note': note,
+    'created_at': createdAt.toIso8601String(),
+    'updated_at': updatedAt.toIso8601String(),
+  };
 }
 
 class LedgerItem {
@@ -97,12 +97,12 @@ class LedgerItem {
   });
 
   factory LedgerItem.fromMap(Map<String, dynamic> m) => LedgerItem(
-        id: m['id'] as String,
-        type: m['type'] as String,
-        amount: (m['amount'] as num).toDouble(),
-        entryDate: DateTime.parse(m['entry_date'] as String),
-        description: m['description'] as String,
-      );
+    id: m['id'] as String,
+    type: m['type'] as String,
+    amount: (m['amount'] as num).toDouble(),
+    entryDate: DateTime.parse(m['entry_date'] as String),
+    description: m['description'] as String,
+  );
 }
 
 class MonthlyPoint {
@@ -121,12 +121,12 @@ class MonthlyPoint {
   });
 
   factory MonthlyPoint.fromMap(Map<String, dynamic> m) => MonthlyPoint(
-        year: (m['year'] as num).toInt(),
-        month: (m['month'] as num).toInt(),
-        incomeTotal: (m['income_total'] as num).toDouble(),
-        expenseTotal: (m['expense_total'] as num).toDouble(),
-        netTotal: (m['net_total'] as num).toDouble(),
-      );
+    year: (m['year'] as num).toInt(),
+    month: (m['month'] as num).toInt(),
+    incomeTotal: (m['income_total'] as num).toDouble(),
+    expenseTotal: (m['expense_total'] as num).toDouble(),
+    netTotal: (m['net_total'] as num).toDouble(),
+  );
 }
 
 class FinanceDashboard {
@@ -145,12 +145,12 @@ class FinanceDashboard {
   });
 
   factory FinanceDashboard.fromJson(Map<String, dynamic> j) => FinanceDashboard(
-        incomeMonth: ((j['income_month'] as num?) ?? 0).toDouble(),
-        expenseMonth: ((j['expense_month'] as num?) ?? 0).toDouble(),
-        netToday: ((j['net_today'] as num?) ?? 0).toDouble(),
-        incomeToday: ((j['income_today'] as num?) ?? 0).toDouble(),
-        expenseToday: ((j['expense_today'] as num?) ?? 0).toDouble(),
-      );
+    incomeMonth: ((j['income_month'] as num?) ?? 0).toDouble(),
+    expenseMonth: ((j['expense_month'] as num?) ?? 0).toDouble(),
+    netToday: ((j['net_today'] as num?) ?? 0).toDouble(),
+    incomeToday: ((j['income_today'] as num?) ?? 0).toDouble(),
+    expenseToday: ((j['expense_today'] as num?) ?? 0).toDouble(),
+  );
 }
 
 class FinanceService {
@@ -170,7 +170,10 @@ class FinanceService {
     return (rows as List).map((e) => FinanceCategory.fromMap(e)).toList();
   }
 
-  Future<FinanceCategory> upsertCategory({required String name, required String type}) async {
+  Future<FinanceCategory> upsertCategory({
+    required String name,
+    required String type,
+  }) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Usuário não autenticado');
     final row = await _supabase
@@ -235,14 +238,19 @@ class FinanceService {
     return Expense.fromMap(row);
   }
 
-  Future<List<Expense>> getExpenses({DateTime? start, DateTime? end, String? categoryId}) async {
+  Future<List<Expense>> getExpenses({
+    DateTime? start,
+    DateTime? end,
+    String? categoryId,
+  }) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Usuário não autenticado');
     PostgrestFilterBuilder query = _supabase
         .from('expenses')
         .select()
         .eq('user_id', user.id);
-    if (start != null) query = query.gte('expense_date', start.toIso8601String());
+    if (start != null)
+      query = query.gte('expense_date', start.toIso8601String());
     if (end != null) query = query.lte('expense_date', end.toIso8601String());
     if (categoryId != null) query = query.eq('category_id', categoryId);
     final rows = await query.order('expense_date', ascending: false);
@@ -252,7 +260,11 @@ class FinanceService {
   Future<void> deleteExpense(String id) async {
     final user = _supabase.auth.currentUser;
     if (user == null) throw Exception('Usuário não autenticado');
-    await _supabase.from('expenses').delete().eq('id', id).eq('user_id', user.id);
+    await _supabase
+        .from('expenses')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id);
   }
 
   Future<List<LedgerItem>> getLedger({DateTime? start, DateTime? end}) async {
@@ -280,15 +292,21 @@ class FinanceService {
   }
 
   Future<FinanceDashboard> getDashboard() async {
-    final res = await _supabase.rpc('get_finance_dashboard') as Map<String, dynamic>;
-    if (res['ok'] != true) throw Exception('Falha ao carregar dashboard financeiro');
+    final res =
+        await _supabase.rpc('get_finance_dashboard') as Map<String, dynamic>;
+    if (res['ok'] != true)
+      throw Exception('Falha ao carregar dashboard financeiro');
     return FinanceDashboard.fromJson(res);
   }
 }
 
-final financeServiceProvider = Provider<FinanceService>((ref) => FinanceService());
+final financeServiceProvider = Provider<FinanceService>(
+  (ref) => FinanceService(),
+);
 
-final financeMonthlySummaryProvider = FutureProvider<List<MonthlyPoint>>((ref) async {
+final financeMonthlySummaryProvider = FutureProvider<List<MonthlyPoint>>((
+  ref,
+) async {
   final svc = ref.read(financeServiceProvider);
   return svc.getMonthlySummary();
 });

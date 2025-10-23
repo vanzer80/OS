@@ -17,10 +17,18 @@ class ReceiptPdfService {
   }) async {
     final pdf = pw.Document();
     final amount = _resolveAmount(order, payments);
-    final paymentMethod = payments != null && payments.isNotEmpty ? payments.first.method : null;
+    final paymentMethod = payments != null && payments.isNotEmpty
+        ? payments.first.method
+        : null;
 
-    final titleStyle = pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold);
-    final labelStyle = pw.TextStyle(fontSize: 11, fontWeight: pw.FontWeight.bold);
+    final titleStyle = pw.TextStyle(
+      fontSize: 18,
+      fontWeight: pw.FontWeight.bold,
+    );
+    final labelStyle = pw.TextStyle(
+      fontSize: 11,
+      fontWeight: pw.FontWeight.bold,
+    );
     final textStyle = pw.TextStyle(fontSize: 11);
 
     pdf.addPage(
@@ -54,7 +62,11 @@ class ReceiptPdfService {
                 pw.SizedBox(height: 10),
                 _keyValue('Valor', _formatCurrency(amount), labelStyle),
                 if (paymentMethod != null)
-                  _keyValue('Pagamento', paymentMethod.toUpperCase(), labelStyle),
+                  _keyValue(
+                    'Pagamento',
+                    paymentMethod.toUpperCase(),
+                    labelStyle,
+                  ),
                 pw.SizedBox(height: 12),
                 pw.Text(
                   'Recebemos de ${client.name} a quantia de ${_formatCurrency(amount)} referente à ${_orderContext(order)}.',
@@ -81,7 +93,11 @@ class ReceiptPdfService {
     return pdf.save();
   }
 
-  pw.Widget _header(CompanyProfile company, pw.TextStyle titleStyle, pw.TextStyle textStyle) {
+  pw.Widget _header(
+    CompanyProfile company,
+    pw.TextStyle titleStyle,
+    pw.TextStyle textStyle,
+  ) {
     return pw.Row(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -118,16 +134,26 @@ class ReceiptPdfService {
   String _composeAddress(CompanyProfile c) {
     final parts = <String>[];
     if ((c.addressLine ?? '').isNotEmpty) parts.add(c.addressLine!);
-    final street = [c.street, c.streetNumber].where((e) => (e ?? '').isNotEmpty).join(', ');
+    final street = [
+      c.street,
+      c.streetNumber,
+    ].where((e) => (e ?? '').isNotEmpty).join(', ');
     if (street.isNotEmpty) parts.add(street);
-    final cityState = [c.city, c.state].where((e) => (e ?? '').isNotEmpty).join('/');
+    final cityState = [
+      c.city,
+      c.state,
+    ].where((e) => (e ?? '').isNotEmpty).join('/');
     if (cityState.isNotEmpty) parts.add(cityState);
     if ((c.neighborhood ?? '').isNotEmpty) parts.add(c.neighborhood!);
     if ((c.zip ?? '').isNotEmpty) parts.add('CEP ${c.zip}');
     return parts.join(' • ');
   }
 
-  pw.Widget _signatureBlock(CompanyProfile company, pw.TextStyle labelStyle, pw.TextStyle textStyle) {
+  pw.Widget _signatureBlock(
+    CompanyProfile company,
+    pw.TextStyle labelStyle,
+    pw.TextStyle textStyle,
+  ) {
     return pw.Row(
       children: [
         pw.Expanded(
@@ -137,7 +163,10 @@ class ReceiptPdfService {
               pw.Container(height: 1, color: PdfColors.grey600),
               pw.SizedBox(height: 4),
               pw.Text(company.name, style: labelStyle),
-              pw.Text('Assinatura', style: textStyle.copyWith(color: PdfColors.grey600)),
+              pw.Text(
+                'Assinatura',
+                style: textStyle.copyWith(color: PdfColors.grey600),
+              ),
             ],
           ),
         ),
@@ -172,4 +201,6 @@ class ReceiptPdfService {
   }
 }
 
-final receiptPdfServiceProvider = Provider<ReceiptPdfService>((ref) => ReceiptPdfService());
+final receiptPdfServiceProvider = Provider<ReceiptPdfService>(
+  (ref) => ReceiptPdfService(),
+);

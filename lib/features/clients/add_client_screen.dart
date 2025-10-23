@@ -20,7 +20,7 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
   final _addressController = TextEditingController();
   final _documentController = TextEditingController();
   final _notesController = TextEditingController();
-  
+
   bool _isLoading = false;
   bool get _isEditing => widget.client != null;
 
@@ -62,17 +62,29 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
       final client = Client(
         id: _isEditing ? widget.client!.id : '',
         name: _nameController.text.trim(),
-        email: _emailController.text.trim().isEmpty ? null : _emailController.text.trim(),
-        phone: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
-        address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
-        document: _documentController.text.trim().isEmpty ? null : _documentController.text.trim(),
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        email: _emailController.text.trim().isEmpty
+            ? null
+            : _emailController.text.trim(),
+        phone: _phoneController.text.trim().isEmpty
+            ? null
+            : _phoneController.text.trim(),
+        address: _addressController.text.trim().isEmpty
+            ? null
+            : _addressController.text.trim(),
+        document: _documentController.text.trim().isEmpty
+            ? null
+            : _documentController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
         createdAt: _isEditing ? widget.client!.createdAt : DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       if (_isEditing) {
-        await ref.read(clientsProvider.notifier).updateClient(widget.client!.id, client);
+        await ref
+            .read(clientsProvider.notifier)
+            .updateClient(widget.client!.id, client);
       } else {
         await ref.read(clientsProvider.notifier).createClient(client);
       }
@@ -80,16 +92,20 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditing ? 'Cliente atualizado com sucesso!' : 'Cliente criado com sucesso!'),
+            content: Text(
+              _isEditing
+                  ? 'Cliente atualizado com sucesso!'
+                  : 'Cliente criado com sucesso!',
+            ),
           ),
         );
         Navigator.of(context).pop();
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $error')));
       }
     } finally {
       if (mounted) {
@@ -102,13 +118,15 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
     try {
       // Solicitar permissão para acessar contatos
       final status = await Permission.contacts.request();
-      
+
       if (status.isGranted) {
         // TODO: Implementar importação de contatos
         // Por enquanto, vamos simular
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Funcionalidade de importar contatos será implementada em breve!'),
+            content: Text(
+              'Funcionalidade de importar contatos será implementada em breve!',
+            ),
           ),
         );
       } else {
@@ -179,7 +197,9 @@ class _AddClientScreenState extends ConsumerState<AddClientScreen> {
               ),
               validator: (value) {
                 if (value != null && value.isNotEmpty) {
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                  if (!RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(value)) {
                     return 'Digite um email válido';
                   }
                 }

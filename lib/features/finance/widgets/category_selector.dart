@@ -39,10 +39,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
 
     setState(() => _isCreatingCategory = true);
     try {
-      final category = await ref.read(financeServiceProvider).upsertCategory(
-            name: name,
-            type: widget.categoryType,
-          );
+      final category = await ref
+          .read(financeServiceProvider)
+          .upsertCategory(name: name, type: widget.categoryType);
       widget.onCategoryChanged(category.id);
       _newCategoryController.clear();
       setState(() => _showNewCategoryField = false);
@@ -53,9 +52,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao criar categoria: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro ao criar categoria: $e')));
       }
     } finally {
       setState(() => _isCreatingCategory = false);
@@ -67,7 +66,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Excluir Categoria'),
-        content: Text('Deseja excluir a categoria "${category.name}"?\n\nEsta ação não pode ser desfeita.'),
+        content: Text(
+          'Deseja excluir a categoria "${category.name}"?\n\nEsta ação não pode ser desfeita.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -105,7 +106,9 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<FinanceCategory>>(
-      future: ref.read(financeServiceProvider).getCategories(type: widget.categoryType),
+      future: ref
+          .read(financeServiceProvider)
+          .getCategories(type: widget.categoryType),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -165,7 +168,7 @@ class _CategorySelectorState extends ConsumerState<CategorySelector> {
               ),
             ),
             const SizedBox(height: 8),
-            
+
             // Botão para criar nova categoria
             if (!_showNewCategoryField)
               TextButton.icon(

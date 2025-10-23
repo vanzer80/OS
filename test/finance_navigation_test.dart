@@ -5,7 +5,9 @@ import 'package:os_express_flutter/features/finance/finance_dashboard_screen.dar
 import 'package:os_express_flutter/core/finance_service.dart';
 
 void main() {
-  testWidgets('FinanceDashboardScreen shows titles and actions', (tester) async {
+  testWidgets('FinanceDashboardScreen shows titles and actions', (
+    tester,
+  ) async {
     final fakeDashboard = FinanceDashboard(
       incomeMonth: 1000,
       expenseMonth: 200,
@@ -15,15 +17,29 @@ void main() {
     );
 
     final fakeMonthly = [
-      MonthlyPoint(year: 2025, month: 8, incomeTotal: 1000, expenseTotal: 200, netTotal: 800),
-      MonthlyPoint(year: 2025, month: 9, incomeTotal: 1500, expenseTotal: 300, netTotal: 1200),
+      MonthlyPoint(
+        year: 2025,
+        month: 8,
+        incomeTotal: 1000,
+        expenseTotal: 200,
+        netTotal: 800,
+      ),
+      MonthlyPoint(
+        year: 2025,
+        month: 9,
+        incomeTotal: 1500,
+        expenseTotal: 300,
+        netTotal: 1200,
+      ),
     ];
 
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           financeDashboardProvider.overrideWith((ref) async => fakeDashboard),
-          financeMonthlySummaryProvider.overrideWith((ref) async => fakeMonthly),
+          financeMonthlySummaryProvider.overrideWith(
+            (ref) async => fakeMonthly,
+          ),
         ],
         child: const MaterialApp(home: FinanceDashboardScreen()),
       ),

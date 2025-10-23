@@ -34,10 +34,20 @@ class PdfService {
     final total = items.fold<double>(0.0, (sum, it) => sum + it.totalPrice);
     final totalServicos = total; // alias para clareza
 
-    String joinParts(List<String?> parts) =>
-        parts.where((e) => e != null && e.trim().isNotEmpty).map((e) => e!.trim()).join(', ');
-    final lineAddress1 = joinParts([profile?.street, profile?.streetNumber, profile?.neighborhood]);
-    final lineAddress2 = joinParts([profile?.city, profile?.state, profile?.zip]);
+    String joinParts(List<String?> parts) => parts
+        .where((e) => e != null && e.trim().isNotEmpty)
+        .map((e) => e!.trim())
+        .join(', ');
+    final lineAddress1 = joinParts([
+      profile?.street,
+      profile?.streetNumber,
+      profile?.neighborhood,
+    ]);
+    final lineAddress2 = joinParts([
+      profile?.city,
+      profile?.state,
+      profile?.zip,
+    ]);
 
     // Pré-carregar logo (opcional)
     pw.ImageProvider? logoImage;
@@ -60,7 +70,9 @@ class PdfService {
         } else {
           path = urlOrPath;
         }
-        final signed = await Supabase.instance.client.storage.from(bucket).createSignedUrl(path, 60 * 60);
+        final signed = await Supabase.instance.client.storage
+            .from(bucket)
+            .createSignedUrl(path, 60 * 60);
         logoImage = await networkImage(signed);
       } catch (_) {
         logoImage = null;
@@ -88,7 +100,9 @@ class PdfService {
         } else {
           path = urlOrPath;
         }
-        final signed = await Supabase.instance.client.storage.from(bucket).createSignedUrl(path, 60 * 60);
+        final signed = await Supabase.instance.client.storage
+            .from(bucket)
+            .createSignedUrl(path, 60 * 60);
         signatureImage = await networkImage(signed);
       } catch (_) {
         signatureImage = null;
@@ -96,7 +110,8 @@ class PdfService {
     }
 
     // Pré-carregar imagens da ordem (máx 5)
-    final List<({pw.ImageProvider img, String? title, String? desc})> orderImages = [];
+    final List<({pw.ImageProvider img, String? title, String? desc})>
+    orderImages = [];
     if (imageRecords.isNotEmpty) {
       for (final rec in imageRecords.take(5)) {
         try {
@@ -138,7 +153,7 @@ class PdfService {
             children: [
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
+                children: [
                   if (logoImage != null)
                     pw.Container(
                       width: 48,
@@ -153,25 +168,46 @@ class PdfService {
 
                   pw.Text(
                     profile?.name ?? 'Oficina',
-                    style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+                    style: pw.TextStyle(
+                      fontSize: 14,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
                   ),
                   if ((profile?.taxId ?? '').isNotEmpty)
-                    pw.Text(profile!.taxId!, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      profile!.taxId!,
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
                   if (lineAddress1.isNotEmpty)
-                    pw.Text(lineAddress1, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      lineAddress1,
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
                   if (lineAddress2.isNotEmpty)
-                    pw.Text(lineAddress2, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      lineAddress2,
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
                 ],
               ),
               pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
                   if ((profile?.phone ?? '').isNotEmpty)
-                    pw.Text('Tel.: ${profile!.phone!}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      'Tel.: ${profile!.phone!}',
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
                   if ((profile?.email ?? '').isNotEmpty)
-                    pw.Text(profile!.email!, style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      profile!.email!,
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
                   if ((profile?.contactName ?? '').isNotEmpty)
-                    pw.Text('Contato: ${profile!.contactName!}', style: const pw.TextStyle(fontSize: 10)),
+                    pw.Text(
+                      'Contato: ${profile!.contactName!}',
+                      style: const pw.TextStyle(fontSize: 10),
+                    ),
                 ],
               ),
             ],
@@ -182,8 +218,17 @@ class PdfService {
           pw.Row(
             mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
             children: [
-              pw.Text('Dados do Cliente', style: pw.TextStyle(fontSize: 12, fontWeight: pw.FontWeight.bold)),
-              pw.Text('Data: ${DateFormat('dd/MM/yyyy').format(order.createdAt)}', style: const pw.TextStyle(fontSize: 12)),
+              pw.Text(
+                'Dados do Cliente',
+                style: pw.TextStyle(
+                  fontSize: 12,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
+              pw.Text(
+                'Data: ${DateFormat('dd/MM/yyyy').format(order.createdAt)}',
+                style: const pw.TextStyle(fontSize: 12),
+              ),
             ],
           ),
           pw.SizedBox(height: 6),
@@ -197,9 +242,15 @@ class PdfService {
               if ((client?.name ?? '').isNotEmpty)
                 pw.Text(client!.name, style: const pw.TextStyle(fontSize: 12)),
               if ((client?.phone ?? '').isNotEmpty)
-                pw.Text(client!.phone!, style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(
+                  client!.phone!,
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
               if ((client?.email ?? '').isNotEmpty)
-                pw.Text(client!.email!, style: const pw.TextStyle(fontSize: 10)),
+                pw.Text(
+                  client!.email!,
+                  style: const pw.TextStyle(fontSize: 10),
+                ),
             ],
           ),
 
@@ -211,15 +262,23 @@ class PdfService {
             color: PdfColors.grey600,
             padding: const pw.EdgeInsets.symmetric(vertical: 6),
             child: pw.Center(
-              child: pw.Text('$titlePrefix Nº ${order.orderNumber}',
-                  style: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold)),
+              child: pw.Text(
+                '$titlePrefix Nº ${order.orderNumber}',
+                style: pw.TextStyle(
+                  color: PdfColors.white,
+                  fontWeight: pw.FontWeight.bold,
+                ),
+              ),
             ),
           ),
 
           pw.SizedBox(height: 8),
 
           // Dados do Equipamento (sem moldura)
-          pw.Text('Equipamento', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+          pw.Text(
+            'Equipamento',
+            style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+          ),
           pw.SizedBox(height: 6),
           pw.Table(
             border: pw.TableBorder.all(color: PdfColors.grey300),
@@ -233,18 +292,56 @@ class PdfService {
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                 children: [
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Tipo', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Marca', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Modelo', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Nº Série', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Tipo',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Marca',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Modelo',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Nº Série',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
                 ],
               ),
-              pw.TableRow(children: [
-                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.equipment ?? '-')),
-                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.brand ?? '-')),
-                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.model ?? '-')),
-                pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(order.serialNumber ?? '-')),
-              ]),
+              pw.TableRow(
+                children: [
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(order.equipment ?? '-'),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(order.brand ?? '-'),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(order.model ?? '-'),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(order.serialNumber ?? '-'),
+                  ),
+                ],
+              ),
             ],
           ),
 
@@ -264,22 +361,69 @@ class PdfService {
               pw.TableRow(
                 decoration: const pw.BoxDecoration(color: PdfColors.grey200),
                 children: [
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Descrição', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Qtd', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Unid', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Unit', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
-                  pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Total', style: pw.TextStyle(fontWeight: pw.FontWeight.bold))),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Descrição',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Qtd',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Unid',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Unit',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
+                  pw.Padding(
+                    padding: const pw.EdgeInsets.all(6),
+                    child: pw.Text(
+                      'Total',
+                      style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                    ),
+                  ),
                 ],
               ),
-              ...items.map((it) => pw.TableRow(
-                    children: [
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(it.description)),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(it.quantity.toString())),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(it.unit)),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_currency.format(it.unitPrice))),
-                      pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(_currency.format(it.totalPrice))),
-                    ],
-                  )),
+              ...items.map(
+                (it) => pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(it.description),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(it.quantity.toString()),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(it.unit),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(_currency.format(it.unitPrice)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(6),
+                      child: pw.Text(_currency.format(it.totalPrice)),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
 
@@ -293,15 +437,20 @@ class PdfService {
                 pw.SizedBox(height: 4),
                 pw.Text('Subtotal        ${_currency.format(totalServicos)}'),
                 pw.SizedBox(height: 6),
-                pw.Text('Total $titlePrefix    ${_currency.format(totalServicos)}',
-                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                pw.Text(
+                  'Total $titlePrefix    ${_currency.format(totalServicos)}',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                ),
               ],
             ),
           ),
 
           pw.SizedBox(height: 12),
           if ((order.observations ?? order.description ?? '').isNotEmpty) ...[
-            pw.Text('Observações', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Observações',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
             pw.SizedBox(height: 4),
             pw.Text(order.observations ?? order.description ?? ''),
           ],
@@ -312,19 +461,36 @@ class PdfService {
             children: [
               pw.Expanded(
                 child: pw.RichText(
-                  text: pw.TextSpan(children: [
-                    pw.TextSpan(text: 'Condições de Pagamento: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.TextSpan(text: order.paymentTerms ?? (profile?.defaultPaymentTerms ?? '—')),
-                  ]),
+                  text: pw.TextSpan(
+                    children: [
+                      pw.TextSpan(
+                        text: 'Condições de Pagamento: ',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
+                      pw.TextSpan(
+                        text:
+                            order.paymentTerms ??
+                            (profile?.defaultPaymentTerms ?? '—'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
               pw.SizedBox(width: 24),
               pw.Expanded(
                 child: pw.RichText(
-                  text: pw.TextSpan(children: [
-                    pw.TextSpan(text: 'Garantia: ', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-                    pw.TextSpan(text: order.warranty ?? (profile?.defaultWarranty ?? '—')),
-                  ]),
+                  text: pw.TextSpan(
+                    children: [
+                      pw.TextSpan(
+                        text: 'Garantia: ',
+                        style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                      ),
+                      pw.TextSpan(
+                        text:
+                            order.warranty ?? (profile?.defaultWarranty ?? '—'),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -335,7 +501,10 @@ class PdfService {
             pw.SizedBox(height: 12),
             pw.Divider(color: PdfColors.grey500, thickness: 1),
             pw.SizedBox(height: 6),
-            pw.Text('Fotos', style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+            pw.Text(
+              'Fotos',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
             pw.SizedBox(height: 8),
             pw.Table(
               columnWidths: const {
@@ -350,22 +519,42 @@ class PdfService {
                       for (var j = 0; j < 3; j++)
                         if (i + j < orderImages.length)
                           pw.Padding(
-                            padding: const pw.EdgeInsets.only(bottom: 10, right: 7),
+                            padding: const pw.EdgeInsets.only(
+                              bottom: 10,
+                              right: 7,
+                            ),
                             child: pw.Column(
                               crossAxisAlignment: pw.CrossAxisAlignment.start,
                               children: [
                                 pw.Container(
                                   height: 120,
-                                  decoration: pw.BoxDecoration(border: pw.Border.all(color: PdfColors.grey300)),
-                                  child: pw.FittedBox(child: pw.Image(orderImages[i + j].img)),
+                                  decoration: pw.BoxDecoration(
+                                    border: pw.Border.all(
+                                      color: PdfColors.grey300,
+                                    ),
+                                  ),
+                                  child: pw.FittedBox(
+                                    child: pw.Image(orderImages[i + j].img),
+                                  ),
                                 ),
-                                if (((orderImages[i + j].title) ?? '').isNotEmpty)
+                                if (((orderImages[i + j].title) ?? '')
+                                    .isNotEmpty)
                                   pw.Padding(
                                     padding: const pw.EdgeInsets.only(top: 4),
-                                    child: pw.Text(orderImages[i + j].title!, style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold)),
+                                    child: pw.Text(
+                                      orderImages[i + j].title!,
+                                      style: pw.TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: pw.FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                if (((orderImages[i + j].desc) ?? '').isNotEmpty)
-                                  pw.Text(orderImages[i + j].desc!, style: const pw.TextStyle(fontSize: 9)),
+                                if (((orderImages[i + j].desc) ?? '')
+                                    .isNotEmpty)
+                                  pw.Text(
+                                    orderImages[i + j].desc!,
+                                    style: const pw.TextStyle(fontSize: 9),
+                                  ),
                               ],
                             ),
                           )
@@ -379,12 +568,18 @@ class PdfService {
 
           pw.SizedBox(height: 40),
           pw.Center(
-            child: pw.Column(children: [
-              if (signatureImage != null)
-                pw.Image(signatureImage, height: 40),
-              pw.Text(profile?.name ?? 'Oficina', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-              if ((profile?.contactName ?? '').isNotEmpty) pw.Text(profile!.contactName!),
-            ]),
+            child: pw.Column(
+              children: [
+                if (signatureImage != null)
+                  pw.Image(signatureImage, height: 40),
+                pw.Text(
+                  profile?.name ?? 'Oficina',
+                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                ),
+                if ((profile?.contactName ?? '').isNotEmpty)
+                  pw.Text(profile!.contactName!),
+              ],
+            ),
           ),
         ],
       ),

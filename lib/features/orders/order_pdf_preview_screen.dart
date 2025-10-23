@@ -15,7 +15,8 @@ class OrderPdfPreviewScreen extends ConsumerStatefulWidget {
   const OrderPdfPreviewScreen({super.key, required this.order});
 
   @override
-  ConsumerState<OrderPdfPreviewScreen> createState() => _OrderPdfPreviewScreenState();
+  ConsumerState<OrderPdfPreviewScreen> createState() =>
+      _OrderPdfPreviewScreenState();
 }
 
 class _OrderPdfPreviewScreenState extends ConsumerState<OrderPdfPreviewScreen> {
@@ -37,7 +38,9 @@ class _OrderPdfPreviewScreenState extends ConsumerState<OrderPdfPreviewScreen> {
 
       Client? client;
       if (widget.order.clientId != null) {
-        try { client = await clientsService.getClientById(widget.order.clientId!); } catch (_) {}
+        try {
+          client = await clientsService.getClientById(widget.order.clientId!);
+        } catch (_) {}
       }
       final items = await ordersService.getOrderItems(widget.order.id);
       final imageRecords = await ordersService.getOrderImages(widget.order.id);
@@ -59,7 +62,9 @@ class _OrderPdfPreviewScreenState extends ConsumerState<OrderPdfPreviewScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao gerar PDF: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao gerar PDF: $e')));
     }
   }
 
@@ -75,7 +80,9 @@ class _OrderPdfPreviewScreenState extends ConsumerState<OrderPdfPreviewScreen> {
     final text = Uri.encodeComponent('Ordem ${widget.order.orderNumber}');
     final url = Uri.parse('https://wa.me/?text=$text');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Não foi possível abrir o WhatsApp')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Não foi possível abrir o WhatsApp')),
+      );
     }
   }
 
@@ -85,20 +92,26 @@ class _OrderPdfPreviewScreenState extends ConsumerState<OrderPdfPreviewScreen> {
       appBar: AppBar(
         title: Text('PDF ${widget.order.orderNumber}'),
         actions: [
-          IconButton(onPressed: _pdfBytes == null ? null : _downloadPdf, icon: const Icon(Icons.download)),
-          IconButton(onPressed: _pdfBytes == null ? null : _shareWhatsApp, icon: const Icon(Icons.share)),
+          IconButton(
+            onPressed: _pdfBytes == null ? null : _downloadPdf,
+            icon: const Icon(Icons.download),
+          ),
+          IconButton(
+            onPressed: _pdfBytes == null ? null : _shareWhatsApp,
+            icon: const Icon(Icons.share),
+          ),
         ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _pdfBytes == null
-              ? const Center(child: Text('Falha ao gerar PDF'))
-              : PdfPreview(
-                  build: (format) async => _pdfBytes!,
-                  allowSharing: true,
-                  canChangeOrientation: false,
-                  canChangePageFormat: false,
-                ),
+          ? const Center(child: Text('Falha ao gerar PDF'))
+          : PdfPreview(
+              build: (format) async => _pdfBytes!,
+              allowSharing: true,
+              canChangeOrientation: false,
+              canChangePageFormat: false,
+            ),
     );
   }
 }

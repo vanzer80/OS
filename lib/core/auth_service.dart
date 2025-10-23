@@ -56,7 +56,9 @@ class AuthResult {
 // Provider para gerenciar estado de autenticação
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
 
-final authStateProvider = StateNotifierProvider<AuthStateNotifier, AuthState>((ref) {
+final authStateProvider = StateNotifierProvider<AuthStateNotifier, AuthState>((
+  ref,
+) {
   return AuthStateNotifier(ref.read(authServiceProvider));
 });
 
@@ -87,33 +89,34 @@ class AuthState {
 class AuthStateNotifier extends StateNotifier<AuthState> {
   final AuthService _authService;
 
-  AuthStateNotifier(this._authService) : super(AuthState(isAuthenticated: false));
+  AuthStateNotifier(this._authService)
+    : super(AuthState(isAuthenticated: false));
 
   Future<AuthResult> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true);
-    
+
     final result = await _authService.signIn(email, password);
-    
+
     state = state.copyWith(
       isLoading: false,
       isAuthenticated: result.success,
       currentUser: result.success ? email : null,
     );
-    
+
     return result;
   }
 
   Future<AuthResult> signUp(String name, String email, String password) async {
     state = state.copyWith(isLoading: true);
-    
+
     final result = await _authService.signUp(name, email, password);
-    
+
     state = state.copyWith(
       isLoading: false,
       isAuthenticated: result.success,
       currentUser: result.success ? email : null,
     );
-    
+
     return result;
   }
 

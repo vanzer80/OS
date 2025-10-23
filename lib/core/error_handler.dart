@@ -11,11 +11,11 @@ class ErrorHandler {
   ErrorHandler._internal();
 
   final AnalyticsService _analytics = AnalyticsService();
-  
+
   /// Inicializa o handler de erros
   static void initialize() {
     final handler = ErrorHandler();
-    
+
     // Captura erros do Flutter
     FlutterError.onError = (FlutterErrorDetails details) {
       handler._handleFlutterError(details);
@@ -74,7 +74,7 @@ class ErrorHandler {
     Map<String, dynamic>? additionalData,
   }) {
     final handler = ErrorHandler();
-    
+
     if (kDebugMode) {
       print('Manual Error Report: $error');
       if (stackTrace != null) {
@@ -104,7 +104,7 @@ class ErrorHandler {
     Map<String, dynamic>? requestData,
   }) {
     final handler = ErrorHandler();
-    
+
     handler._analytics.trackError(
       'Network Error: $error',
       context: {
@@ -119,26 +119,20 @@ class ErrorHandler {
   /// Reporta erro de autenticação
   static void reportAuthError(String error, {String? method}) {
     final handler = ErrorHandler();
-    
+
     handler._analytics.trackError(
       'Auth Error: $error',
-      context: {
-        'type': 'auth_error',
-        'method': method,
-      },
+      context: {'type': 'auth_error', 'method': method},
     );
   }
 
   /// Reporta erro de validação
   static void reportValidationError(String field, String error) {
     final handler = ErrorHandler();
-    
+
     handler._analytics.trackError(
       'Validation Error: $error',
-      context: {
-        'type': 'validation_error',
-        'field': field,
-      },
+      context: {'type': 'validation_error', 'field': field},
     );
   }
 }
@@ -148,11 +142,7 @@ class ErrorBoundary extends ConsumerWidget {
   final Widget child;
   final Widget Function(Object error, StackTrace? stackTrace)? errorBuilder;
 
-  const ErrorBoundary({
-    super.key,
-    required this.child,
-    this.errorBuilder,
-  });
+  const ErrorBoundary({super.key, required this.child, this.errorBuilder});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -174,25 +164,16 @@ class _DefaultErrorWidget extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 48,
-            ),
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
             const SizedBox(height: 16),
             const Text(
               'Ops! Algo deu errado',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             Text(
               'Nosso time foi notificado sobre este erro.',
-              style: TextStyle(
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(color: Colors.grey[600]),
             ),
             const SizedBox(height: 16),
             ElevatedButton(
@@ -265,11 +246,7 @@ mixin ErrorReportingMixin {
   }
 
   /// Executa função síncrona com tratamento de erro
-  T? safeExecuteSync<T>(
-    T Function() function, {
-    String? context,
-    T? fallback,
-  }) {
+  T? safeExecuteSync<T>(T Function() function, {String? context, T? fallback}) {
     try {
       return function();
     } catch (error, stackTrace) {

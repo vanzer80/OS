@@ -9,7 +9,10 @@ class UpdateService {
 
   final String versionJsonUrl;
 
-  Future<void> checkForUpdates(BuildContext context, {bool silent = false}) async {
+  Future<void> checkForUpdates(
+    BuildContext context, {
+    bool silent = false,
+  }) async {
     try {
       final packageInfo = await PackageInfo.fromPlatform();
       final localCode = int.tryParse(packageInfo.buildNumber) ?? 0;
@@ -17,7 +20,11 @@ class UpdateService {
       final uri = Uri.parse(versionJsonUrl);
       final resp = await http.get(uri).timeout(const Duration(seconds: 10));
       if (resp.statusCode != 200) {
-        if (!silent && context.mounted) _showSnack(context, 'Não foi possível verificar atualização (${resp.statusCode}).');
+        if (!silent && context.mounted)
+          _showSnack(
+            context,
+            'Não foi possível verificar atualização (${resp.statusCode}).',
+          );
         return;
       }
 
@@ -28,20 +35,33 @@ class UpdateService {
       final changelog = data['changelog'] as String? ?? '';
 
       if (remoteCode > localCode && apkUrl != null && apkUrl.isNotEmpty) {
-        if (context.mounted) _showUpdateDialog(context, remoteName, changelog, apkUrl);
+        if (context.mounted)
+          _showUpdateDialog(context, remoteName, changelog, apkUrl);
       } else if (!silent) {
-        if (context.mounted) _showSnack(context, 'Você já está na última versão (${packageInfo.version}).');
+        if (context.mounted)
+          _showSnack(
+            context,
+            'Você já está na última versão (${packageInfo.version}).',
+          );
       }
     } catch (e) {
-      if (!silent && context.mounted) _showSnack(context, 'Falha ao verificar atualização: $e');
+      if (!silent && context.mounted)
+        _showSnack(context, 'Falha ao verificar atualização: $e');
     }
   }
 
   void _showSnack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _showUpdateDialog(BuildContext context, String versionName, String changelog, String apkUrl) {
+  void _showUpdateDialog(
+    BuildContext context,
+    String versionName,
+    String changelog,
+    String apkUrl,
+  ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -69,22 +89,24 @@ class UpdateService {
               try {
                 final uri = Uri.parse(apkUrl);
                 print('Tentando abrir URL: $apkUrl'); // Debug
-                
+
                 if (await canLaunchUrl(uri)) {
                   final success = await launchUrl(
-                    uri, 
+                    uri,
                     mode: LaunchMode.externalApplication,
                   );
-                  
+
                   if (!success) {
                     throw Exception('Falha ao abrir o navegador');
                   }
-                  
+
                   if (context.mounted) {
                     Navigator.of(context).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Download iniciado! Verifique as notificações.'),
+                        content: Text(
+                          'Download iniciado! Verifique as notificações.',
+                        ),
                         backgroundColor: Colors.green,
                       ),
                     );

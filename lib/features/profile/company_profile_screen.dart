@@ -9,7 +9,8 @@ class CompanyProfileScreen extends ConsumerStatefulWidget {
   const CompanyProfileScreen({super.key});
 
   @override
-  ConsumerState<CompanyProfileScreen> createState() => _CompanyProfileScreenState();
+  ConsumerState<CompanyProfileScreen> createState() =>
+      _CompanyProfileScreenState();
 }
 
 class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
@@ -38,7 +39,10 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
     super.initState();
     _load();
     // Escuta mudanças em tempo real no perfil e reflete na UI
-    ref.listen<AsyncValue<CompanyProfile?>>(companyProfileStreamProvider, (prev, next) {
+    ref.listen<AsyncValue<CompanyProfile?>>(companyProfileStreamProvider, (
+      prev,
+      next,
+    ) {
       if (!mounted) return;
       if (next.hasValue && next.value != null) {
         final p = next.value!;
@@ -86,7 +90,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao carregar: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao carregar: $e')));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -95,28 +101,42 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
   Future<void> _pickAndUploadLogo() async {
     try {
       final svc = ref.read(companyProfileServiceProvider);
-      final res = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+      final res = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
       if (res == null || res.files.single.bytes == null) return;
       final bytes = res.files.single.bytes as Uint8List;
       final url = await svc.uploadLogo(bytes);
       setState(() => _logoUrl = url);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logo atualizado')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Logo atualizado')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao subir logo: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao subir logo: $e')));
     }
   }
 
   Future<void> _pickAndUploadSignature() async {
     try {
       final svc = ref.read(companyProfileServiceProvider);
-      final res = await FilePicker.platform.pickFiles(type: FileType.image, withData: true);
+      final res = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
       if (res == null || res.files.single.bytes == null) return;
       final bytes = res.files.single.bytes as Uint8List;
       final url = await svc.uploadSignature(bytes);
       setState(() => _signatureUrl = url);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Assinatura atualizada')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Assinatura atualizada')));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao subir assinatura: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao subir assinatura: $e')));
     }
   }
 
@@ -126,26 +146,42 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
     try {
       final svc = ref.read(companyProfileServiceProvider);
       final userId = Supabase.instance.client.auth.currentUser!.id;
-      await svc.upsertProfile(CompanyProfile(
-        userId: userId,
-        name: _nameCtrl.text.trim(),
-        taxId: _taxIdCtrl.text.trim().isEmpty ? null : _taxIdCtrl.text.trim(),
-        street: _streetCtrl.text.trim().isEmpty ? null : _streetCtrl.text.trim(),
-        streetNumber: _streetNumberCtrl.text.trim().isEmpty ? null : _streetNumberCtrl.text.trim(),
-        neighborhood: _neighborhoodCtrl.text.trim().isEmpty ? null : _neighborhoodCtrl.text.trim(),
-        city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
-        state: _stateCtrl.text.trim().isEmpty ? null : _stateCtrl.text.trim(),
-        zip: _zipCtrl.text.trim().isEmpty ? null : _zipCtrl.text.trim(),
-        phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
-        email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
-        contactName: _contactCtrl.text.trim().isEmpty ? null : _contactCtrl.text.trim(),
-        logoUrl: _logoUrl,
-        signatureUrl: _signatureUrl,
-        defaultPaymentTerms: _paymentTermsCtrl.text.trim().isEmpty ? null : _paymentTermsCtrl.text.trim(),
-        defaultWarranty: _warrantyCtrl.text.trim().isEmpty ? null : _warrantyCtrl.text.trim(),
-      ));
+      await svc.upsertProfile(
+        CompanyProfile(
+          userId: userId,
+          name: _nameCtrl.text.trim(),
+          taxId: _taxIdCtrl.text.trim().isEmpty ? null : _taxIdCtrl.text.trim(),
+          street: _streetCtrl.text.trim().isEmpty
+              ? null
+              : _streetCtrl.text.trim(),
+          streetNumber: _streetNumberCtrl.text.trim().isEmpty
+              ? null
+              : _streetNumberCtrl.text.trim(),
+          neighborhood: _neighborhoodCtrl.text.trim().isEmpty
+              ? null
+              : _neighborhoodCtrl.text.trim(),
+          city: _cityCtrl.text.trim().isEmpty ? null : _cityCtrl.text.trim(),
+          state: _stateCtrl.text.trim().isEmpty ? null : _stateCtrl.text.trim(),
+          zip: _zipCtrl.text.trim().isEmpty ? null : _zipCtrl.text.trim(),
+          phone: _phoneCtrl.text.trim().isEmpty ? null : _phoneCtrl.text.trim(),
+          email: _emailCtrl.text.trim().isEmpty ? null : _emailCtrl.text.trim(),
+          contactName: _contactCtrl.text.trim().isEmpty
+              ? null
+              : _contactCtrl.text.trim(),
+          logoUrl: _logoUrl,
+          signatureUrl: _signatureUrl,
+          defaultPaymentTerms: _paymentTermsCtrl.text.trim().isEmpty
+              ? null
+              : _paymentTermsCtrl.text.trim(),
+          defaultWarranty: _warrantyCtrl.text.trim().isEmpty
+              ? null
+              : _warrantyCtrl.text.trim(),
+        ),
+      );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Perfil salvo com sucesso')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Perfil salvo com sucesso')));
     } catch (e) {
       if (!mounted) return;
       final msg = _formatSaveError(e);
@@ -154,9 +190,12 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
       if (mounted) setState(() => _saving = false);
     }
   }
+
   String _formatSaveError(Object e) {
     final s = e.toString();
-    if (s.contains('PGRST204') || s.contains('schema cache') || s.contains("Could not find the 'default_payment_terms'")) {
+    if (s.contains('PGRST204') ||
+        s.contains('schema cache') ||
+        s.contains("Could not find the 'default_payment_terms'")) {
       return 'Erro ao salvar: schema do Supabase desatualizado. Aguarde alguns segundos, recarregue o app ou reinicie o projeto para atualizar o cache.';
     }
     return 'Erro ao salvar: $s';
@@ -198,15 +237,21 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _nameCtrl,
-                            decoration: const InputDecoration(labelText: 'Nome da Empresa *'),
-                            validator: (v) => (v == null || v.trim().isEmpty) ? 'Obrigatório' : null,
+                            decoration: const InputDecoration(
+                              labelText: 'Nome da Empresa *',
+                            ),
+                            validator: (v) => (v == null || v.trim().isEmpty)
+                                ? 'Obrigatório'
+                                : null,
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: TextFormField(
                             controller: _taxIdCtrl,
-                            decoration: const InputDecoration(labelText: 'CNPJ/CPF'),
+                            decoration: const InputDecoration(
+                              labelText: 'CNPJ/CPF',
+                            ),
                           ),
                         ),
                       ],
@@ -227,7 +272,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                           width: 120,
                           child: TextFormField(
                             controller: _streetNumberCtrl,
-                            decoration: const InputDecoration(labelText: 'Número'),
+                            decoration: const InputDecoration(
+                              labelText: 'Número',
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -235,7 +282,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                           flex: 2,
                           child: TextFormField(
                             controller: _neighborhoodCtrl,
-                            decoration: const InputDecoration(labelText: 'Bairro'),
+                            decoration: const InputDecoration(
+                              labelText: 'Bairro',
+                            ),
                           ),
                         ),
                       ],
@@ -247,7 +296,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _cityCtrl,
-                            decoration: const InputDecoration(labelText: 'Cidade'),
+                            decoration: const InputDecoration(
+                              labelText: 'Cidade',
+                            ),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -275,14 +326,18 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _phoneCtrl,
-                            decoration: const InputDecoration(labelText: 'Telefone'),
+                            decoration: const InputDecoration(
+                              labelText: 'Telefone',
+                            ),
                           ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: TextFormField(
                             controller: _emailCtrl,
-                            decoration: const InputDecoration(labelText: 'E-mail'),
+                            decoration: const InputDecoration(
+                              labelText: 'E-mail',
+                            ),
                           ),
                         ),
                       ],
@@ -291,7 +346,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: _contactCtrl,
-                      decoration: const InputDecoration(labelText: 'Contato (responsável)'),
+                      decoration: const InputDecoration(
+                        labelText: 'Contato (responsável)',
+                      ),
                     ),
 
                     const SizedBox(height: 16),
@@ -336,7 +393,10 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                     const SizedBox(height: 12),
                     const Divider(),
                     const SizedBox(height: 8),
-                    const Text('Configurações da Ordem', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const Text(
+                      'Configurações da Ordem',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _paymentTermsCtrl,
@@ -358,7 +418,8 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                       controller: _warrantyCtrl,
                       decoration: const InputDecoration(
                         labelText: 'Garantia (padrão)',
-                        hintText: 'Ex.: 90 dias para serviço, sem cobertura de peças',
+                        hintText:
+                            'Ex.: 90 dias para serviço, sem cobertura de peças',
                         border: OutlineInputBorder(),
                       ),
                       validator: (v) {
@@ -374,7 +435,9 @@ class _CompanyProfileScreenState extends ConsumerState<CompanyProfileScreen> {
                       child: ElevatedButton.icon(
                         onPressed: _saving ? null : _save,
                         icon: const Icon(Icons.save),
-                        label: _saving ? const Text('Salvando...') : const Text('Salvar'),
+                        label: _saving
+                            ? const Text('Salvando...')
+                            : const Text('Salvar'),
                       ),
                     ),
                   ],

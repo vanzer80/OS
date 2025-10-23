@@ -18,7 +18,10 @@ void main() {
 
       final service = StatusPolicyService(dummyClient);
 
-      final s1 = await service.getAllowedStatuses(forceRefresh: true, fetch: fakeFetch);
+      final s1 = await service.getAllowedStatuses(
+        forceRefresh: true,
+        fetch: fakeFetch,
+      );
       expect(s1, equals([OrderStatus.pending, OrderStatus.completed]));
 
       // Segunda chamada sem forceRefresh deve retornar do cache
@@ -27,20 +30,35 @@ void main() {
       expect(calls, 1);
     });
 
-    test('getAllowedStatuses cai em fallback quando fetch lança exceção', () async {
-      Future<dynamic> failingFetch() async {
-        throw Exception('falha');
-      }
+    test(
+      'getAllowedStatuses cai em fallback quando fetch lança exceção',
+      () async {
+        Future<dynamic> failingFetch() async {
+          throw Exception('falha');
+        }
 
-      final service = StatusPolicyService(dummyClient);
-      final s = await service.getAllowedStatuses(forceRefresh: true, fetch: failingFetch);
-      expect(s, equals(OrderStatus.values));
-    });
+        final service = StatusPolicyService(dummyClient);
+        final s = await service.getAllowedStatuses(
+          forceRefresh: true,
+          fetch: failingFetch,
+        );
+        expect(s, equals(OrderStatus.values));
+      },
+    );
 
     test('isTransitionAllowed aplica regras de negócio locais', () {
       final service = StatusPolicyService(dummyClient);
-      expect(service.isTransitionAllowed(OrderStatus.pending, OrderStatus.completed), isFalse);
-      expect(service.isTransitionAllowed(OrderStatus.inProgress, OrderStatus.completed), isTrue);
+      expect(
+        service.isTransitionAllowed(OrderStatus.pending, OrderStatus.completed),
+        isFalse,
+      );
+      expect(
+        service.isTransitionAllowed(
+          OrderStatus.inProgress,
+          OrderStatus.completed,
+        ),
+        isTrue,
+      );
     });
   });
 }

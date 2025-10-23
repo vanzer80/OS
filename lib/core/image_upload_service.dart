@@ -16,12 +16,16 @@ class ImageUploadService {
       // Validar tamanho do arquivo
       final fileSize = await imageFile.length();
       if (fileSize > SupabaseConfig.maxImageSize) {
-        throw Exception('Imagem muito grande. Máximo: ${SupabaseConfig.maxImageSize ~/ (1024 * 1024)}MB');
+        throw Exception(
+          'Imagem muito grande. Máximo: ${SupabaseConfig.maxImageSize ~/ (1024 * 1024)}MB',
+        );
       }
 
       // Validar tipo do arquivo
       final extension = path.extension(imageFile.path).toLowerCase();
-      if (!SupabaseConfig.allowedImageTypes.contains(extension.replaceAll('.', ''))) {
+      if (!SupabaseConfig.allowedImageTypes.contains(
+        extension.replaceAll('.', ''),
+      )) {
         throw Exception('Tipo de arquivo não suportado');
       }
 
@@ -46,12 +50,18 @@ class ImageUploadService {
   }
 
   // Upload (Web) a partir de bytes
-  Future<String> uploadOrderImageBytes(Uint8List bytes, String orderId, {String? originalName}) async {
+  Future<String> uploadOrderImageBytes(
+    Uint8List bytes,
+    String orderId, {
+    String? originalName,
+  }) async {
     try {
       // Validar tamanho
       final fileSize = bytes.lengthInBytes;
       if (fileSize > SupabaseConfig.maxImageSize) {
-        throw Exception('Imagem muito grande. Máximo: ${SupabaseConfig.maxImageSize ~/ (1024 * 1024)}MB');
+        throw Exception(
+          'Imagem muito grande. Máximo: ${SupabaseConfig.maxImageSize ~/ (1024 * 1024)}MB',
+        );
       }
 
       // Inferir extensão a partir do nome original (fallback .jpg)
@@ -88,7 +98,10 @@ class ImageUploadService {
   }
 
   // Upload múltiplo (Mobile/Desktop)
-  Future<List<String>> uploadOrderImages(List<File> imageFiles, String orderId) async {
+  Future<List<String>> uploadOrderImages(
+    List<File> imageFiles,
+    String orderId,
+  ) async {
     final List<String> uploadedUrls = [];
     for (final imageFile in imageFiles) {
       try {
@@ -103,12 +116,22 @@ class ImageUploadService {
   }
 
   // Upload múltiplo (Web)
-  Future<List<String>> uploadOrderImagesBytes(List<Uint8List> imagesBytes, String orderId, {List<String?>? originalNames}) async {
+  Future<List<String>> uploadOrderImagesBytes(
+    List<Uint8List> imagesBytes,
+    String orderId, {
+    List<String?>? originalNames,
+  }) async {
     final List<String> uploadedUrls = [];
     for (var i = 0; i < imagesBytes.length; i++) {
       try {
-        final name = (originalNames != null && i < originalNames.length) ? originalNames[i] : null;
-        final url = await uploadOrderImageBytes(imagesBytes[i], orderId, originalName: name);
+        final name = (originalNames != null && i < originalNames.length)
+            ? originalNames[i]
+            : null;
+        final url = await uploadOrderImageBytes(
+          imagesBytes[i],
+          orderId,
+          originalName: name,
+        );
         uploadedUrls.add(url);
       } catch (error) {
         // ignore: avoid_print
@@ -126,9 +149,9 @@ class ImageUploadService {
 
       if (bucketIndex != -1 && bucketIndex + 1 < pathSegments.length) {
         final filePath = pathSegments.sublist(bucketIndex + 1).join('/');
-        await _supabase.storage
-            .from(SupabaseConfig.imagesBucket)
-            .remove([filePath]);
+        await _supabase.storage.from(SupabaseConfig.imagesBucket).remove([
+          filePath,
+        ]);
       }
     } catch (error) {
       throw Exception('Erro ao deletar imagem: $error');
@@ -148,7 +171,6 @@ class ImageUploadService {
     }
     return deletedUrls;
   }
-
 }
 
 // Provider

@@ -36,22 +36,28 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     }
 
     if (!_formKey.currentState!.validate()) return;
-    
+
     try {
       final amount = double.parse(_amountController.text.replaceAll(',', '.'));
-      await ref.read(financeServiceProvider).createExpense(
+      await ref
+          .read(financeServiceProvider)
+          .createExpense(
             categoryId: _selectedCategoryId!,
             description: _descController.text.trim(),
             amount: amount,
             expenseDate: _date,
           );
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Despesa registrada')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Despesa registrada')));
         Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Erro: $e')));
       }
     }
   }
@@ -72,7 +78,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   labelText: 'Descrição',
                   border: OutlineInputBorder(),
                 ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Informe a descrição' : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Informe a descrição'
+                    : null,
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -82,7 +90,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                   border: OutlineInputBorder(),
                   prefixText: 'R\$ ',
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (v) {
                   final t = (v ?? '').trim();
                   if (t.isEmpty) return 'Informe o valor';
@@ -109,7 +119,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 child: ListTile(
                   leading: const Icon(Icons.calendar_today),
                   title: const Text('Data da despesa'),
-                  subtitle: Text('${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}'),
+                  subtitle: Text(
+                    '${_date.day.toString().padLeft(2, '0')}/${_date.month.toString().padLeft(2, '0')}/${_date.year}',
+                  ),
                   trailing: const Icon(Icons.edit),
                   onTap: () async {
                     final picked = await showDatePicker(

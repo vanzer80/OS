@@ -36,7 +36,9 @@ class TestMenu extends StatelessWidget {
           if (!isAllowed(currentStatus, target)) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text("Transição de '${statusText(currentStatus)}' para '${statusText(target)}' não permitida."),
+                content: Text(
+                  "Transição de '${statusText(currentStatus)}' para '${statusText(target)}' não permitida.",
+                ),
               ),
             );
             return;
@@ -60,15 +62,13 @@ class TestMenu extends StatelessWidget {
 }
 
 void main() {
-  testWidgets('Exibe SnackBar quando transição inválida é selecionada', (tester) async {
+  testWidgets('Exibe SnackBar quando transição inválida é selecionada', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(
-          body: Center(
-            child: TestMenu(
-              isAllowed: _policy,
-            ),
-          ),
+          body: Center(child: TestMenu(isAllowed: _policy)),
         ),
       ),
     );
@@ -82,7 +82,10 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verifica SnackBar
-    expect(find.text("Transição de 'Pendente' para 'Concluída' não permitida."), findsOneWidget);
+    expect(
+      find.text("Transição de 'Pendente' para 'Concluída' não permitida."),
+      findsOneWidget,
+    );
   });
 }
 

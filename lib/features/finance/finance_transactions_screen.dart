@@ -7,10 +7,12 @@ class FinanceTransactionsScreen extends ConsumerStatefulWidget {
   const FinanceTransactionsScreen({super.key});
 
   @override
-  ConsumerState<FinanceTransactionsScreen> createState() => _FinanceTransactionsScreenState();
+  ConsumerState<FinanceTransactionsScreen> createState() =>
+      _FinanceTransactionsScreenState();
 }
 
-class _FinanceTransactionsScreenState extends ConsumerState<FinanceTransactionsScreen> {
+class _FinanceTransactionsScreenState
+    extends ConsumerState<FinanceTransactionsScreen> {
   DateTimeRange? _range;
 
   @override
@@ -39,10 +41,9 @@ class _FinanceTransactionsScreenState extends ConsumerState<FinanceTransactionsS
         ],
       ),
       body: FutureBuilder<List<LedgerItem>>(
-        future: ref.read(financeServiceProvider).getLedger(
-              start: _range?.start,
-              end: _range?.end,
-            ),
+        future: ref
+            .read(financeServiceProvider)
+            .getLedger(start: _range?.start, end: _range?.end),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -65,11 +66,17 @@ class _FinanceTransactionsScreenState extends ConsumerState<FinanceTransactionsS
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: color.withOpacity(0.15),
-                  child: Icon(isIncome ? Icons.call_received : Icons.call_made, color: color),
+                  child: Icon(
+                    isIncome ? Icons.call_received : Icons.call_made,
+                    color: color,
+                  ),
                 ),
                 title: Text(it.description),
                 subtitle: Text(DateFormat('dd/MM/yyyy').format(it.entryDate)),
-                trailing: Text('$sign ${currency.format(it.amount)}', style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+                trailing: Text(
+                  '$sign ${currency.format(it.amount)}',
+                  style: TextStyle(color: color, fontWeight: FontWeight.bold),
+                ),
               );
             },
           );

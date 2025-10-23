@@ -108,10 +108,17 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
 
   Widget _statusChip(OrderStatus status) {
     return Chip(
-      avatar: Icon(_statusIcon(status), color: _statusTextColor(status), size: 18),
+      avatar: Icon(
+        _statusIcon(status),
+        color: _statusTextColor(status),
+        size: 18,
+      ),
       label: Text(
         _statusText(status),
-        style: TextStyle(color: _statusTextColor(status), fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: _statusTextColor(status),
+          fontWeight: FontWeight.w600,
+        ),
       ),
       backgroundColor: _statusBgColor(status),
     );
@@ -132,12 +139,21 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
 
       Client? client;
       if (widget.order.clientId != null) {
-        try { client = await clientsSvc.getClientById(widget.order.clientId!); } catch (_) {}
+        try {
+          client = await clientsSvc.getClientById(widget.order.clientId!);
+        } catch (_) {}
       }
       final items = await ordersSvc.getOrderItems(widget.order.id);
       final imageRecords = await ordersSvc.getOrderImages(widget.order.id);
       final profile = await companySvc.getProfile();
-      final pdf = await pdfSvc.buildOrderPdf(order: widget.order, client: client, items: items, profile: profile, imageUrls: const [], imageRecords: imageRecords);
+      final pdf = await pdfSvc.buildOrderPdf(
+        order: widget.order,
+        client: client,
+        items: items,
+        profile: profile,
+        imageUrls: const [],
+        imageRecords: imageRecords,
+      );
 
       if (!mounted) return;
       setState(() {
@@ -149,7 +165,9 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao carregar ordem: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Erro ao carregar ordem: $e')));
     }
   }
 
@@ -161,7 +179,10 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
 
   Future<void> _downloadPdf() async {
     if (_pdf == null) return;
-    await Printing.sharePdf(bytes: _pdf!, filename: '${widget.order.orderNumber}.pdf');
+    await Printing.sharePdf(
+      bytes: _pdf!,
+      filename: '${widget.order.orderNumber}.pdf',
+    );
   }
 
   @override
@@ -174,13 +195,16 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
           IconButton(
             tooltip: 'Visualizar PDF',
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: _pdf == null ? null : () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => OrderPdfPreviewScreen(order: order),
-                ),
-              );
-            },
+            onPressed: _pdf == null
+                ? null
+                : () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            OrderPdfPreviewScreen(order: order),
+                      ),
+                    );
+                  },
           ),
           IconButton(
             tooltip: 'Transformar em Recibo',
@@ -209,36 +233,48 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
             onPressed: () async {
               if (order.status == OrderStatus.cancelled) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Ordem cancelada não pode ser paga.')),
+                  const SnackBar(
+                    content: Text('Ordem cancelada não pode ser paga.'),
+                  ),
                 );
                 return;
               }
               // Capturar observação do método (opcional) e confirmar
               final noteController = TextEditingController();
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  title: const Text('Registrar Pagamento'),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text('Confirmar registro de pagamento desta ordem?'),
-                      const SizedBox(height: 12),
-                      TextField(
-                        controller: noteController,
-                        decoration: const InputDecoration(
-                          labelText: 'Observação do método (opcional)',
-                          hintText: 'Ex: PIX Banco X, Dinheiro, Cartão Y',
-                        ),
+              final confirm =
+                  await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      title: const Text('Registrar Pagamento'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            'Confirmar registro de pagamento desta ordem?',
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: noteController,
+                            decoration: const InputDecoration(
+                              labelText: 'Observação do método (opcional)',
+                              hintText: 'Ex: PIX Banco X, Dinheiro, Cartão Y',
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-                    ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmar')),
-                  ],
-                ),
-              ) ?? false;
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('Cancelar'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text('Confirmar'),
+                        ),
+                      ],
+                    ),
+                  ) ??
+                  false;
               if (!confirm) return;
               final paymentsService = ref.read(paymentsServiceProvider);
               try {
@@ -246,15 +282,21 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   orderId: order.id,
                   amount: order.totalAmount,
                   method: 'pix',
-                  methodNote: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+                  methodNote: noteController.text.trim().isEmpty
+                      ? null
+                      : noteController.text.trim(),
                 );
-                await ref.read(ordersProvider.notifier).updateOrderStatus(order.id, OrderStatus.completed);
+                await ref
+                    .read(ordersProvider.notifier)
+                    .updateOrderStatus(order.id, OrderStatus.completed);
                 ref.refresh(statusBreakdownProvider);
                 ref.refresh(monthlyRevenueProvider);
                 ref.refresh(dashboardSummaryProvider);
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Pagamento registrado e ordem concluída.')),
+                    const SnackBar(
+                      content: Text('Pagamento registrado e ordem concluída.'),
+                    ),
                   );
                 }
               } catch (e) {
@@ -276,11 +318,24 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                 // Status e tipo
                 Row(
                   children: [
-                    Chip(label: Text(order.type == OrderType.service ? 'Serviço' : order.type == OrderType.budget ? 'Orçamento' : 'Venda')),
+                    Chip(
+                      label: Text(
+                        order.type == OrderType.service
+                            ? 'Serviço'
+                            : order.type == OrderType.budget
+                            ? 'Orçamento'
+                            : 'Venda',
+                      ),
+                    ),
                     const SizedBox(width: 8),
                     _statusChip(order.status),
                     const Spacer(),
-                    Text('R\$ ${order.totalAmount.toStringAsFixed(2)}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(
+                      'R\$ ${order.totalAmount.toStringAsFixed(2)}',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -302,11 +357,18 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Dados do Equipamento', style: TextStyle(fontWeight: FontWeight.bold)),
-                        if ((order.equipment ?? '').isNotEmpty) Text('Equipamento: ${order.equipment}'),
-                        if ((order.model ?? '').isNotEmpty) Text('Modelo: ${order.model}'),
-                        if ((order.brand ?? '').isNotEmpty) Text('Marca: ${order.brand}'),
-                        if ((order.serialNumber ?? '').isNotEmpty) Text('S/N: ${order.serialNumber}'),
+                        const Text(
+                          'Dados do Equipamento',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        if ((order.equipment ?? '').isNotEmpty)
+                          Text('Equipamento: ${order.equipment}'),
+                        if ((order.model ?? '').isNotEmpty)
+                          Text('Modelo: ${order.model}'),
+                        if ((order.brand ?? '').isNotEmpty)
+                          Text('Marca: ${order.brand}'),
+                        if ((order.serialNumber ?? '').isNotEmpty)
+                          Text('S/N: ${order.serialNumber}'),
                       ],
                     ),
                   ),
@@ -323,11 +385,18 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                         title: Text('Itens da Ordem'),
                       ),
                       const Divider(height: 1),
-                      ..._items.map((it) => ListTile(
-                            title: Text(it.description),
-                            subtitle: Text('Qtd ${it.quantity}  •  Unit R\$ ${it.unitPrice.toStringAsFixed(2)}'),
-                            trailing: Text('R\$ ${it.totalPrice.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          )),
+                      ..._items.map(
+                        (it) => ListTile(
+                          title: Text(it.description),
+                          subtitle: Text(
+                            'Qtd ${it.quantity}  •  Unit R\$ ${it.unitPrice.toStringAsFixed(2)}',
+                          ),
+                          trailing: Text(
+                            'R\$ ${it.totalPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ),
                       const SizedBox(height: 8),
                     ],
                   ),
@@ -351,13 +420,16 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   children: [
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: _pdf == null ? null : () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) => OrderPdfPreviewScreen(order: order),
-                            ),
-                          );
-                        },
+                        onPressed: _pdf == null
+                            ? null
+                            : () {
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        OrderPdfPreviewScreen(order: order),
+                                  ),
+                                );
+                              },
                         icon: const Icon(Icons.picture_as_pdf),
                         label: const Text('Visualizar PDF'),
                       ),
@@ -368,7 +440,8 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                         onPressed: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => ReceiptPdfPreviewScreen(order: order),
+                              builder: (context) =>
+                                  ReceiptPdfPreviewScreen(order: order),
                             ),
                           );
                         },

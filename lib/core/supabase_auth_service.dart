@@ -23,7 +23,10 @@ class SupabaseAuthService {
       );
 
       if (response.user != null) {
-        return AuthResult(success: true, message: 'Login realizado com sucesso!');
+        return AuthResult(
+          success: true,
+          message: 'Login realizado com sucesso!',
+        );
       } else {
         return AuthResult(success: false, message: 'Erro no login');
       }
@@ -39,15 +42,14 @@ class SupabaseAuthService {
       final response = await _supabase.auth.signUp(
         email: email,
         password: password,
-        data: {
-          'name': name,
-        },
+        data: {'name': name},
       );
 
       if (response.user != null) {
         return AuthResult(
-          success: true, 
-          message: 'Conta criada com sucesso! Verifique seu email para confirmar.',
+          success: true,
+          message:
+              'Conta criada com sucesso! Verifique seu email para confirmar.',
         );
       } else {
         return AuthResult(success: false, message: 'Erro ao criar conta');
@@ -71,7 +73,10 @@ class SupabaseAuthService {
     } on AuthException catch (error) {
       return AuthResult(success: false, message: error.message);
     } catch (error) {
-      return AuthResult(success: false, message: 'Erro no login com Google: $error');
+      return AuthResult(
+        success: false,
+        message: 'Erro no login com Google: $error',
+      );
     }
   }
 
@@ -83,11 +88,17 @@ class SupabaseAuthService {
         redirectTo: '${Uri.base.origin}/#/auth/callback',
         authScreenLaunchMode: LaunchMode.platformDefault,
       );
-      
+
       // No web, o usuário será redirecionado, então retornamos sucesso
-      return AuthResult(success: true, message: 'Redirecionando para Google...');
+      return AuthResult(
+        success: true,
+        message: 'Redirecionando para Google...',
+      );
     } catch (error) {
-      return AuthResult(success: false, message: 'Erro na autenticação web: $error');
+      return AuthResult(
+        success: false,
+        message: 'Erro na autenticação web: $error',
+      );
     }
   }
 
@@ -98,36 +109,52 @@ class SupabaseAuthService {
         serverClientId: SupabaseConfig.googleAndroidClientId,
         scopes: ['email', 'profile', 'openid'],
       );
-      
+
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
-      
+
       if (googleUser == null) {
-        return AuthResult(success: false, message: 'Login cancelado pelo usuário');
+        return AuthResult(
+          success: false,
+          message: 'Login cancelado pelo usuário',
+        );
       }
-      
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      
+
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
       final accessToken = googleAuth.accessToken;
       final idToken = googleAuth.idToken;
-      
+
       if (accessToken == null || idToken == null) {
-        return AuthResult(success: false, message: 'Falha ao obter tokens de autenticação');
+        return AuthResult(
+          success: false,
+          message: 'Falha ao obter tokens de autenticação',
+        );
       }
-      
+
       // Autenticar com Supabase usando os tokens do Google
       final AuthResponse response = await _supabase.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
         accessToken: accessToken,
       );
-      
+
       if (response.user != null) {
-        return AuthResult(success: true, message: 'Login com Google realizado com sucesso!');
+        return AuthResult(
+          success: true,
+          message: 'Login com Google realizado com sucesso!',
+        );
       } else {
-        return AuthResult(success: false, message: 'Falha na autenticação com Supabase');
+        return AuthResult(
+          success: false,
+          message: 'Falha na autenticação com Supabase',
+        );
       }
     } catch (error) {
-      return AuthResult(success: false, message: 'Erro na autenticação mobile: $error');
+      return AuthResult(
+        success: false,
+        message: 'Erro na autenticação mobile: $error',
+      );
     }
   }
 
@@ -155,11 +182,14 @@ class AuthResult {
 }
 
 // Provider para gerenciar estado de autenticação com Supabase
-final supabaseAuthServiceProvider = Provider<SupabaseAuthService>((ref) => SupabaseAuthService());
+final supabaseAuthServiceProvider = Provider<SupabaseAuthService>(
+  (ref) => SupabaseAuthService(),
+);
 
-final supabaseAuthStateProvider = StateNotifierProvider<SupabaseAuthStateNotifier, AuthState>((ref) {
-  return SupabaseAuthStateNotifier(ref.read(supabaseAuthServiceProvider));
-});
+final supabaseAuthStateProvider =
+    StateNotifierProvider<SupabaseAuthStateNotifier, AuthState>((ref) {
+      return SupabaseAuthStateNotifier(ref.read(supabaseAuthServiceProvider));
+    });
 
 class AuthState {
   final bool isAuthenticated;
@@ -188,10 +218,11 @@ class AuthState {
 class SupabaseAuthStateNotifier extends StateNotifier<AuthState> {
   final SupabaseAuthService _authService;
 
-  SupabaseAuthStateNotifier(this._authService) : super(AuthState(isAuthenticated: false)) {
+  SupabaseAuthStateNotifier(this._authService)
+    : super(AuthState(isAuthenticated: false)) {
     // Verificar se já está logado
     _checkInitialAuth();
-    
+
     // Escutar mudanças no estado de autenticação
     _authService.authStateChanges.listen((authState) {
       state = authState;
@@ -201,18 +232,15 @@ class SupabaseAuthStateNotifier extends StateNotifier<AuthState> {
   void _checkInitialAuth() {
     final user = _authService.currentUser;
     if (user != null) {
-      state = AuthState(
-        isAuthenticated: true,
-        currentUser: user.email,
-      );
+      state = AuthState(isAuthenticated: true, currentUser: user.email);
     }
   }
 
   Future<AuthResult> signIn(String email, String password) async {
     state = state.copyWith(isLoading: true);
-    
+
     final result = await _authService.signIn(email, password);
-    
+
     if (result.success) {
       state = state.copyWith(
         isLoading: false,
@@ -222,15 +250,15 @@ class SupabaseAuthStateNotifier extends StateNotifier<AuthState> {
     } else {
       state = state.copyWith(isLoading: false);
     }
-    
+
     return result;
   }
 
   Future<AuthResult> signUp(String name, String email, String password) async {
     state = state.copyWith(isLoading: true);
-    
+
     final result = await _authService.signUp(name, email, password);
-    
+
     if (result.success) {
       state = state.copyWith(
         isLoading: false,
@@ -240,17 +268,17 @@ class SupabaseAuthStateNotifier extends StateNotifier<AuthState> {
     } else {
       state = state.copyWith(isLoading: false);
     }
-    
+
     return result;
   }
 
   Future<AuthResult> signInWithGoogle() async {
     state = state.copyWith(isLoading: true);
-    
+
     final result = await _authService.signInWithGoogle();
-    
+
     state = state.copyWith(isLoading: false);
-    
+
     return result;
   }
 

@@ -43,44 +43,44 @@ class CompanyProfile {
   });
 
   factory CompanyProfile.fromJson(Map<String, dynamic> json) => CompanyProfile(
-        userId: json['user_id'],
-        name: json['name'],
-        taxId: json['tax_id'],
-        addressLine: json['address_line'],
-        street: json['street'],
-        streetNumber: json['street_number'],
-        neighborhood: json['neighborhood'],
-        city: json['city'],
-        state: json['state'],
-        zip: json['zip'],
-        phone: json['phone'],
-        email: json['email'],
-        contactName: json['contact_name'],
-        logoUrl: json['logo_url'],
-        signatureUrl: json['signature_url'],
-        defaultPaymentTerms: json['default_payment_terms'],
-        defaultWarranty: json['default_warranty'],
-      );
+    userId: json['user_id'],
+    name: json['name'],
+    taxId: json['tax_id'],
+    addressLine: json['address_line'],
+    street: json['street'],
+    streetNumber: json['street_number'],
+    neighborhood: json['neighborhood'],
+    city: json['city'],
+    state: json['state'],
+    zip: json['zip'],
+    phone: json['phone'],
+    email: json['email'],
+    contactName: json['contact_name'],
+    logoUrl: json['logo_url'],
+    signatureUrl: json['signature_url'],
+    defaultPaymentTerms: json['default_payment_terms'],
+    defaultWarranty: json['default_warranty'],
+  );
 
   Map<String, dynamic> toJson() => {
-        'user_id': userId,
-        'name': name,
-        'tax_id': taxId,
-        'address_line': addressLine,
-        'street': street,
-        'street_number': streetNumber,
-        'neighborhood': neighborhood,
-        'city': city,
-        'state': state,
-        'zip': zip,
-        'phone': phone,
-        'email': email,
-        'contact_name': contactName,
-        'logo_url': logoUrl,
-        'signature_url': signatureUrl,
-        'default_payment_terms': defaultPaymentTerms,
-        'default_warranty': defaultWarranty,
-      };
+    'user_id': userId,
+    'name': name,
+    'tax_id': taxId,
+    'address_line': addressLine,
+    'street': street,
+    'street_number': streetNumber,
+    'neighborhood': neighborhood,
+    'city': city,
+    'state': state,
+    'zip': zip,
+    'phone': phone,
+    'email': email,
+    'contact_name': contactName,
+    'logo_url': logoUrl,
+    'signature_url': signatureUrl,
+    'default_payment_terms': defaultPaymentTerms,
+    'default_warranty': defaultWarranty,
+  };
 }
 
 class CompanyProfileService {
@@ -123,17 +123,41 @@ class CompanyProfileService {
     }
   }
 
-  Future<String> uploadLogo(Uint8List bytes, {String fileName = 'logo.png'}) async {
+  Future<String> uploadLogo(
+    Uint8List bytes, {
+    String fileName = 'logo.png',
+  }) async {
     final user = _supabase.auth.currentUser!;
     final path = '${user.id}/$fileName';
-    await _supabase.storage.from(bucket).uploadBinary(path, bytes, fileOptions: const FileOptions(contentType: 'image/png', upsert: true));
+    await _supabase.storage
+        .from(bucket)
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(
+            contentType: 'image/png',
+            upsert: true,
+          ),
+        );
     return _supabase.storage.from(bucket).getPublicUrl(path);
   }
 
-  Future<String> uploadSignature(Uint8List bytes, {String fileName = 'signature.png'}) async {
+  Future<String> uploadSignature(
+    Uint8List bytes, {
+    String fileName = 'signature.png',
+  }) async {
     final user = _supabase.auth.currentUser!;
     final path = '${user.id}/$fileName';
-    await _supabase.storage.from(bucket).uploadBinary(path, bytes, fileOptions: const FileOptions(contentType: 'image/png', upsert: true));
+    await _supabase.storage
+        .from(bucket)
+        .uploadBinary(
+          path,
+          bytes,
+          fileOptions: const FileOptions(
+            contentType: 'image/png',
+            upsert: true,
+          ),
+        );
     return _supabase.storage.from(bucket).getPublicUrl(path);
   }
 
@@ -155,7 +179,9 @@ class CompanyProfileService {
   }
 }
 
-final companyProfileServiceProvider = Provider<CompanyProfileService>((ref) => CompanyProfileService());
+final companyProfileServiceProvider = Provider<CompanyProfileService>(
+  (ref) => CompanyProfileService(),
+);
 final companyProfileProvider = FutureProvider<CompanyProfile?>((ref) async {
   return ref.read(companyProfileServiceProvider).getProfile();
 });
