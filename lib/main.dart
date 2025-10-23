@@ -3,12 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/supabase_config.dart';
 import 'core/supabase_auth_service.dart';
+import 'core/error_handler.dart';
+import 'core/analytics_service.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/register_screen.dart';
 import 'features/dashboard/dashboard_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Inicializar handler de erros
+  ErrorHandler.initialize();
   
   // Inicializar Supabase
   await Supabase.initialize(
@@ -19,31 +24,62 @@ void main() async {
   runApp(const ProviderScope(child: OSExpressApp()));
 }
 
-class OSExpressApp extends StatelessWidget {
+class OSExpressApp extends ConsumerWidget {
   const OSExpressApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'OS Express',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.light,
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Inicializar analytics
+    final analytics = ref.read(analyticsServiceProvider);
+    
+    return ErrorBoundary(
+      child: MaterialApp(
+        title: 'OS Express - Sistema de Ordens de Serviço',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.light,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.blue,
-          brightness: Brightness.dark,
+        darkTheme: ThemeData(
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: Colors.blue,
+            brightness: Brightness.dark,
+          ),
+          useMaterial3: true,
         ),
-        useMaterial3: true,
+        themeMode: ThemeMode.system,
+        home: const AuthWrapper(),
+        navigatorObservers: [
+          AnalyticsNavigatorObserver(analytics),
+        ],
       ),
-      themeMode: ThemeMode.system,
-      home: const AuthWrapper(),
     );
+  }
+}
+
+/// Observer para rastrear navegação entre telas
+class AnalyticsNavigatorObserver extends NavigatorObserver {
+  final AnalyticsService analytics;
+  
+  AnalyticsNavigatorObserver(this.analytics);
+  
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPush(route, previousRoute);
+    if (route.settings.name != null) {
+      analytics.trackPageView(route.settings.name!);
+    }
+  }
+  
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    super.didPop(route, previousRoute);
+    if (previousRoute?.settings.name != null) {
+      analytics.trackPageView(previousRoute!.settings.name!);
+    }
   }
 }
 

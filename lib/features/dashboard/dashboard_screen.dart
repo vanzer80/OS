@@ -5,13 +5,15 @@ import 'package:intl/intl.dart';
 import '../../core/update_service.dart';
 import '../../core/clients_service.dart';
 import '../../core/orders_service.dart';
+import '../../core/payments_service.dart';
 import '../../core/filters_service.dart';
+import '../../core/status_policy_service.dart';
 import '../clients/add_client_screen.dart';
 import '../orders/add_order_screen.dart';
 import '../orders/edit_order_screen.dart';
-import '../orders/order_pdf_preview_screen.dart';
 import '../orders/order_details_screen.dart';
 import '../profile/company_profile_screen.dart';
+import '../finance/finance_dashboard_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -27,8 +29,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     const HomeTab(),
     const ClientsTab(),
     const OrdersTab(),
+    const FinanceDashboardScreen(),
     const ProfileTab(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Assinar mudanças na tabela payments e manter gráficos sincronizados
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final svc = ref.read(paymentsServiceProvider);
+      svc.subscribePaymentsRealtime(() {
+        ref.refresh(monthlyRevenueProvider);
+        ref.refresh(statusBreakdownProvider);
+        ref.refresh(dashboardSummaryProvider);
+      });
+      // Assinar mudanças em service_orders para manter resumo e status atualizados
+      final ordersSvc = ref.read(ordersServiceProvider);
+      ordersSvc.subscribeOrdersRealtime(() {
+        ref.refresh(dashboardSummaryProvider);
+        ref.refresh(statusBreakdownProvider);
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    // Encerrar assinatura de pagamentos
+    try {
+      ref.read(paymentsServiceProvider).disposePaymentsRealtime();
+    } catch (_) {}
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,6 +86,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.assignment_outlined),
             selectedIcon: Icon(Icons.assignment),
             label: 'Ordens',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.payments_outlined),
+            selectedIcon: Icon(Icons.payments),
+            label: 'Financeiro',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outlined),
@@ -225,6 +262,8 @@ class HomeTab extends ConsumerWidget {
                       );
                       if (result != null) {
                         ref.read(ordersProvider.notifier).loadOrders();
+                        ref.refresh(dashboardSummaryProvider);
+                        ref.refresh(statusBreakdownProvider);
                       }
                     },
                   ),
@@ -275,6 +314,254 @@ class HomeTab extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _QuickActionCard(
+                    title: 'Financeiro',
+                    subtitle: 'Dashboard e Transações',
+                    icon: Icons.payments,
+                    color: Colors.blueAccent,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const FinanceDashboardScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 32),
+            Text(
+              'Gráficos',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // Distribuição de Status
+            ref.watch(statusBreakdownProvider).when(
+              data: (sb) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Distribuição por Status',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                      const SizedBox(height: 12),
+                      if (sb.total == 0)
+                        const Text('Sem ordens cadastradas.')
+                      else ...[
+                        Container(
+                          height: 18,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            children: [
+                              if (sb.pending > 0)
+                                Expanded(
+                                  flex: sb.pending,
+                                  child: Container(color: Colors.orange),
+                                ),
+                              if (sb.awaitingApproval > 0)
+                                Expanded(
+                                  flex: sb.awaitingApproval,
+                                  child: Container(color: Colors.amber),
+                                ),
+                              if (sb.awaitingPayment > 0)
+                                Expanded(
+                                  flex: sb.awaitingPayment,
+                                  child: Container(color: Colors.purple),
+                                ),
+                              if (sb.inProgress > 0)
+                                Expanded(
+                                  flex: sb.inProgress,
+                                  child: Container(color: Colors.blue),
+                                ),
+                              if (sb.completed > 0)
+                                Expanded(
+                                  flex: sb.completed,
+                                  child: Container(color: Colors.green),
+                                ),
+
+                              if (sb.cancelled > 0)
+                                Expanded(
+                                  flex: sb.cancelled,
+                                  child: Container(color: Colors.red),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 12,
+                          runSpacing: 8,
+                          children: [
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.orange))),
+                                SizedBox(width: 6),
+                                Text('Pendente'),
+                              ],
+                            ),
+                            Text(': ${sb.pending}'),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.amber))),
+                                SizedBox(width: 6),
+                                Text('Aguardando aprovação'),
+                              ],
+                            ),
+                            Text(': ${sb.awaitingApproval}'),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.purple))),
+                                SizedBox(width: 6),
+                                Text('Aguardando pagamento'),
+                              ],
+                            ),
+                            Text(': ${sb.awaitingPayment}'),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.blue))),
+                                SizedBox(width: 6),
+                                Text('Em andamento'),
+                              ],
+                            ),
+                            Text(': ${sb.inProgress}'),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.green))),
+                                SizedBox(width: 6),
+                                Text('Concluída'),
+                              ],
+                            ),
+                            Text(': ${sb.completed}'),
+
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                SizedBox(width: 12, height: 12, child: DecoratedBox(decoration: BoxDecoration(color: Colors.red))),
+                                SizedBox(width: 6),
+                                Text('Cancelada'),
+                              ],
+                            ),
+                            Text(': ${sb.cancelled}'),
+                          ],
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              loading: () => const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: LinearProgressIndicator(),
+                ),
+              ),
+              error: (e, _) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Erro ao carregar status: $e'),
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // Faturamento mensal
+            ref.watch(monthlyRevenueProvider).when(
+              data: (points) {
+                final currency = NumberFormat.simpleCurrency(locale: 'pt_BR');
+                final max = points
+                    .map((p) => p.value)
+                    .fold<double>(0.0, (prev, v) => v > prev ? v : prev);
+                return Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Faturamento por Mês (últimos 12)',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 180,
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              for (final p in points)
+                                Expanded(
+                                  child: Container(
+                                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                                    height: max <= 0 ? 0 : 150 * (p.value / max),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blueAccent,
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            for (final p in points)
+                              Expanded(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  child: Text(
+                                    DateFormat('MM/yy').format(DateTime(p.year, p.month)),
+                                    textAlign: TextAlign.center,
+                                    style: const TextStyle(fontSize: 10),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text('Máximo: ${currency.format(max)}'),
+                      ],
+                    ),
+                  ),
+                );
+              },
+              loading: () => const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: LinearProgressIndicator(),
+                ),
+              ),
+              error: (e, _) => Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text('Erro ao carregar faturamento: $e'),
+                ),
+              ),
             ),
           ],
         ),
@@ -440,7 +727,7 @@ class _ClientsTabState extends ConsumerState<ClientsTab> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceVariant.withAlpha(76),
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(76),
               ),
             ),
           ),
@@ -747,10 +1034,15 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
   }
 
   Widget _buildFiltersSection() {
+    final allowedStatusesAsync = ref.watch(allowedStatusesProvider);
+    final List<OrderStatus> allowedStatusesList = allowedStatusesAsync.maybeWhen(
+      data: (list) => list,
+      orElse: () => OrderStatus.values.toList(),
+    );
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant.withAlpha(76),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest.withAlpha(76),
         border: Border(
           bottom: BorderSide(
             color: Theme.of(context).colorScheme.outline,
@@ -854,14 +1146,10 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                     value: null,
                     child: Text('Todos'),
                   ),
-                  ...OrderStatus.values.map((status) {
+                  ...allowedStatusesList.map((status) {
                     return DropdownMenuItem(
                       value: status,
-                      child: Text(
-                        status == OrderStatus.pending ? 'Pendente' :
-                        status == OrderStatus.inProgress ? 'Em Andamento' :
-                        status == OrderStatus.completed ? 'Concluída' : 'Cancelada'
-                      ),
+                      child: Text(_getStatusText(status)),
                     );
                   }),
                 ],
@@ -991,6 +1279,12 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
   }
 
   Widget _buildOrdersList(List<ServiceOrder> orders, Map<String, String> clientNameById) {
+    // Tornar o menu reativo às mudanças de política de status
+    final allowedStatusesAsyncForMenu = ref.watch(allowedStatusesProvider);
+    final List<OrderStatus> allowedForMenu = allowedStatusesAsyncForMenu.maybeWhen(
+      data: (list) => list,
+      orElse: () => OrderStatus.values.toList(),
+    );
     return RefreshIndicator(
       onRefresh: () async {
         ref.read(ordersProvider.notifier).loadOrders(
@@ -1079,30 +1373,153 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
                         }
                       } else if (value == 'delete') {
                         _showDeleteConfirmation(order);
+                      } else if (value.startsWith('status_')) {
+                        final db = value.substring(7);
+                        final target = OrderStatusDbX.fromDb(db);
+                        final policy = ref.read(statusPolicyServiceProvider);
+                        if (!policy.isTransitionAllowed(order.status, target)) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("Transição de '${_getStatusText(order.status)}' para '${_getStatusText(target)}' não permitida."),
+                            ),
+                          );
+                          return;
+                        }
+                        try {
+                          await ref.read(ordersProvider.notifier).updateOrderStatus(order.id, target);
+                          // Atualiza gráficos
+                          ref.refresh(statusBreakdownProvider);
+                          ref.refresh(monthlyRevenueProvider);
+                          ref.refresh(dashboardSummaryProvider);
+                          // Atualiza políticas de status do menu
+                          ref.refresh(allowedStatusesProvider);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Status da ordem atualizado.')),
+                          );
+                        } catch (e) {
+                          // Em caso de violação de constraint, atualiza políticas e mostra mensagem amigável
+                          ref.refresh(allowedStatusesProvider);
+                          final msg = e.toString();
+                          final friendly = msg.contains('[ERR_STATUS_CHECK_VIOLATION]')
+                              ? 'O servidor rejeitou este status. Verifique as políticas/constraints e tente novamente.'
+                              : msg;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Falha ao atualizar status: $friendly')),
+                          );
+                        }
+                      } else if (value == 'mark_paid') {
+                        final paymentsService = ref.read(paymentsServiceProvider);
+                        try {
+                          // Capturar observação do método (opcional)
+                          final noteController = TextEditingController();
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: const Text('Registrar Pagamento'),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Text('Confirme o registro de pagamento desta ordem.'),
+                                  const SizedBox(height: 12),
+                                  TextField(
+                                    controller: noteController,
+                                    decoration: const InputDecoration(
+                                      labelText: 'Observação do método (opcional)',
+                                      hintText: 'Ex: PIX Banco X, Dinheiro, Cartão Y',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () => Navigator.pop(ctx, false),
+                                  child: const Text('Cancelar'),
+                                ),
+                                ElevatedButton(
+                                  onPressed: () => Navigator.pop(ctx, true),
+                                  child: const Text('Confirmar'),
+                                ),
+                              ],
+                            ),
+                          ) ?? false;
+                          if (!confirmed) return;
+
+                          await paymentsService.createPayment(
+                            orderId: order.id,
+                            amount: order.totalAmount,
+                            method: 'pix',
+                            methodNote: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+                          );
+                          // Ao pagar, concluir a ordem automaticamente
+                          await ref.read(ordersProvider.notifier).updateOrderStatus(order.id, OrderStatus.completed);
+                          // Atualiza gráficos (status e faturamento)
+                          ref.refresh(statusBreakdownProvider);
+                          ref.refresh(monthlyRevenueProvider);
+                          ref.refresh(dashboardSummaryProvider);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Pagamento registrado e ordem concluída.')),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Falha ao registrar pagamento: $e')),
+                          );
+                        }
                       }
                     },
-                    itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Row(
-                          children: [
-                            Icon(Icons.edit, size: 20),
-                            SizedBox(width: 8),
-                            Text('Editar'),
-                          ],
-                        ),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Row(
-                          children: [
-                            Icon(Icons.delete, size: 20, color: Colors.red),
-                            SizedBox(width: 8),
-                            Text('Excluir', style: TextStyle(color: Colors.red)),
-                          ],
-                        ),
-                      ),
-                    ],
+                    itemBuilder: (context) {
+                        final allowed = allowedForMenu;
+                        final items = <PopupMenuEntry<String>>[
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit, size: 20),
+                                SizedBox(width: 8),
+                                Text('Editar'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete, size: 20, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Excluir', style: TextStyle(color: Colors.red)),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(),
+                        ];
+                        for (final s in allowed) {
+                          items.add(
+                            PopupMenuItem(
+                              value: 'status_${s.dbName}',
+                              child: Row(
+                                children: [
+                                  Icon(_statusIconFor(s), size: 20),
+                                  const SizedBox(width: 8),
+                                  Text('Status: ${_getStatusText(s)}'),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+                        items.add(const PopupMenuDivider());
+                        items.add(
+                          const PopupMenuItem(
+                            value: 'mark_paid',
+                            child: Row(
+                              children: [
+                                Icon(Icons.monetization_on, size: 20),
+                                SizedBox(width: 8),
+                                Text('Registrar Pagamento'),
+                              ],
+                            ),
+                          ),
+                        );
+                        return items;
+                      },
                   ),
                 ],
               ),
@@ -1149,6 +1566,12 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
     switch (status) {
       case OrderStatus.pending:
         return Colors.orange;
+      case OrderStatus.awaitingApproval:
+        return Colors.amber;
+      case OrderStatus.awaitingPayment:
+        return Colors.purple;
+      case OrderStatus.awaitingPart:
+        return Colors.brown;
       case OrderStatus.inProgress:
         return Colors.blue;
       case OrderStatus.completed:
@@ -1162,6 +1585,12 @@ class _OrdersTabState extends ConsumerState<OrdersTab> {
     switch (status) {
       case OrderStatus.pending:
         return 'Pendente';
+      case OrderStatus.awaitingApproval:
+        return 'Aguardando Aprovação';
+      case OrderStatus.awaitingPayment:
+        return 'Aguardando Pagamento';
+      case OrderStatus.awaitingPart:
+        return 'Aguardando Peça';
       case OrderStatus.inProgress:
         return 'Em Andamento';
       case OrderStatus.completed:
@@ -1218,5 +1647,24 @@ class ProfileTab extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+IconData _statusIconFor(OrderStatus status) {
+  switch (status) {
+    case OrderStatus.pending:
+      return Icons.hourglass_empty;
+    case OrderStatus.awaitingApproval:
+      return Icons.rate_review;
+    case OrderStatus.awaitingPayment:
+      return Icons.payments;
+    case OrderStatus.awaitingPart:
+      return Icons.inventory_2;
+    case OrderStatus.inProgress:
+      return Icons.build;
+    case OrderStatus.completed:
+      return Icons.check_circle;
+    case OrderStatus.cancelled:
+      return Icons.cancel;
   }
 }

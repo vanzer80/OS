@@ -79,9 +79,12 @@ class ClientsService {
 
   Future<List<Client>> getClients() async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final response = await _supabase
           .from('clients')
           .select()
+          .eq('user_id', user.id)
           .order('created_at', ascending: false);
 
       return (response as List)
@@ -94,10 +97,13 @@ class ClientsService {
 
   Future<Client> getClientById(String id) async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final response = await _supabase
           .from('clients')
           .select()
           .eq('id', id)
+          .eq('user_id', user.id)
           .single();
 
       return Client.fromJson(response);
@@ -125,6 +131,8 @@ class ClientsService {
 
   Future<Client> updateClient(String id, Client client) async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final response = await _supabase
           .from('clients')
           .update({
@@ -132,6 +140,7 @@ class ClientsService {
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('id', id)
+          .eq('user_id', user.id)
           .select()
           .single();
 
@@ -143,10 +152,13 @@ class ClientsService {
 
   Future<void> deleteClient(String id) async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       await _supabase
           .from('clients')
           .delete()
-          .eq('id', id);
+          .eq('id', id)
+          .eq('user_id', user.id);
     } catch (error) {
       throw Exception('Erro ao deletar cliente: $error');
     }
@@ -154,9 +166,12 @@ class ClientsService {
 
   Future<List<Client>> searchClients(String query) async {
     try {
+      final user = _supabase.auth.currentUser;
+      if (user == null) throw Exception('Usuário não autenticado');
       final response = await _supabase
           .from('clients')
           .select()
+          .eq('user_id', user.id)
           .or('name.ilike.%$query%,email.ilike.%$query%,phone.ilike.%$query%')
           .order('created_at', ascending: false);
 

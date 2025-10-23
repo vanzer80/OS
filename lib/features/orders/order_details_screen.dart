@@ -8,7 +8,9 @@ import '../../core/orders_service.dart';
 import '../../core/clients_service.dart';
 import '../../core/pdf_service.dart';
 import '../../core/company_profile_service.dart';
+import '../../core/payments_service.dart';
 import 'order_pdf_preview_screen.dart';
+import 'receipt_pdf_preview_screen.dart';
 
 class OrderDetailsScreen extends ConsumerStatefulWidget {
   final ServiceOrder order;
@@ -23,6 +25,97 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
   List<OrderItem> _items = const [];
   bool _loading = true;
   Uint8List? _pdf;
+
+  Color _statusBgColor(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.completed:
+        return Colors.green.shade100;
+      case OrderStatus.cancelled:
+        return Colors.red.shade100;
+      case OrderStatus.inProgress:
+        return Colors.blue.shade100;
+      case OrderStatus.awaitingPayment:
+        return Colors.orange.shade100;
+      case OrderStatus.awaitingApproval:
+        return Colors.amber.shade100;
+      case OrderStatus.awaitingPart:
+        return Colors.brown.shade100;
+      case OrderStatus.pending:
+      default:
+        return Colors.grey.shade100;
+    }
+  }
+
+  Color _statusTextColor(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.completed:
+        return Colors.green.shade800;
+      case OrderStatus.cancelled:
+        return Colors.red.shade800;
+      case OrderStatus.inProgress:
+        return Colors.blue.shade800;
+      case OrderStatus.awaitingPayment:
+        return Colors.orange.shade800;
+      case OrderStatus.awaitingApproval:
+        return Colors.amber.shade800;
+      case OrderStatus.awaitingPart:
+        return Colors.brown.shade800;
+      case OrderStatus.pending:
+      default:
+        return Colors.grey.shade800;
+    }
+  }
+
+  IconData _statusIcon(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.completed:
+        return Icons.check_circle;
+      case OrderStatus.cancelled:
+        return Icons.cancel;
+      case OrderStatus.inProgress:
+        return Icons.timelapse;
+      case OrderStatus.awaitingPayment:
+        return Icons.hourglass_bottom;
+      case OrderStatus.awaitingApproval:
+        return Icons.pending_actions;
+      case OrderStatus.awaitingPart:
+        return Icons.inventory_2;
+      case OrderStatus.pending:
+      default:
+        return Icons.hourglass_empty;
+    }
+  }
+
+  String _statusText(OrderStatus status) {
+    switch (status) {
+      case OrderStatus.completed:
+        return 'Concluída';
+      case OrderStatus.cancelled:
+        return 'Cancelada';
+      case OrderStatus.inProgress:
+        return 'Em Andamento';
+      case OrderStatus.awaitingPayment:
+        return 'Aguardando Pagamento';
+      case OrderStatus.awaitingApproval:
+        return 'Aguardando Aprovação';
+      case OrderStatus.awaitingPart:
+        return 'Aguardando Peça';
+      case OrderStatus.pending:
+      default:
+        return 'Pendente';
+    }
+  }
+
+  Widget _statusChip(OrderStatus status) {
+    return Chip(
+      avatar: Icon(_statusIcon(status), color: _statusTextColor(status), size: 18),
+      label: Text(
+        _statusText(status),
+        style: TextStyle(color: _statusTextColor(status), fontWeight: FontWeight.w600),
+      ),
+      backgroundColor: _statusBgColor(status),
+    );
+  }
 
   @override
   void initState() {
@@ -90,6 +183,17 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
             },
           ),
           IconButton(
+            tooltip: 'Transformar em Recibo',
+            icon: const Icon(Icons.receipt_long),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => ReceiptPdfPreviewScreen(order: order),
+                ),
+              );
+            },
+          ),
+          IconButton(
             tooltip: 'Baixar/Compartilhar',
             icon: const Icon(Icons.download),
             onPressed: _pdf == null ? null : _downloadPdf,
@@ -98,6 +202,69 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
             tooltip: 'WhatsApp',
             icon: const Icon(Icons.share),
             onPressed: _shareWhatsApp,
+          ),
+          IconButton(
+            tooltip: 'Registrar Pagamento',
+            icon: const Icon(Icons.monetization_on_outlined),
+            onPressed: () async {
+              if (order.status == OrderStatus.cancelled) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Ordem cancelada não pode ser paga.')),
+                );
+                return;
+              }
+              // Capturar observação do método (opcional) e confirmar
+              final noteController = TextEditingController();
+              final confirm = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('Registrar Pagamento'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text('Confirmar registro de pagamento desta ordem?'),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: noteController,
+                        decoration: const InputDecoration(
+                          labelText: 'Observação do método (opcional)',
+                          hintText: 'Ex: PIX Banco X, Dinheiro, Cartão Y',
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+                    ElevatedButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Confirmar')),
+                  ],
+                ),
+              ) ?? false;
+              if (!confirm) return;
+              final paymentsService = ref.read(paymentsServiceProvider);
+              try {
+                await paymentsService.createPayment(
+                  orderId: order.id,
+                  amount: order.totalAmount,
+                  method: 'pix',
+                  methodNote: noteController.text.trim().isEmpty ? null : noteController.text.trim(),
+                );
+                await ref.read(ordersProvider.notifier).updateOrderStatus(order.id, OrderStatus.completed);
+                ref.refresh(statusBreakdownProvider);
+                ref.refresh(monthlyRevenueProvider);
+                ref.refresh(dashboardSummaryProvider);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Pagamento registrado e ordem concluída.')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Falha ao registrar pagamento: $e')),
+                  );
+                }
+              }
+            },
           ),
         ],
       ),
@@ -111,7 +278,7 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                   children: [
                     Chip(label: Text(order.type == OrderType.service ? 'Serviço' : order.type == OrderType.budget ? 'Orçamento' : 'Venda')),
                     const SizedBox(width: 8),
-                    Chip(label: Text(order.status == OrderStatus.pending ? 'Pendente' : order.status == OrderStatus.inProgress ? 'Em Andamento' : order.status == OrderStatus.completed ? 'Concluída' : 'Cancelada')),
+                    _statusChip(order.status),
                     const Spacer(),
                     Text('R\$ ${order.totalAmount.toStringAsFixed(2)}', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                   ],
@@ -193,6 +360,20 @@ class _OrderDetailsScreenState extends ConsumerState<OrderDetailsScreen> {
                         },
                         icon: const Icon(Icons.picture_as_pdf),
                         label: const Text('Visualizar PDF'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => ReceiptPdfPreviewScreen(order: order),
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.receipt_long),
+                        label: const Text('Transformar em Recibo'),
                       ),
                     ),
                     const SizedBox(width: 12),

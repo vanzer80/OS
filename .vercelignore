@@ -1,0 +1,49 @@
+# Flutter
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+!build/web/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test
+test/
+coverage/
+
+# Documentation (except deploy guide)
+docs/
+!DEPLOY_GUIDE.md
+
+# Platform specific
+android/
+ios/
+linux/
+macos/
+windows/
+
+# Git
+.git/
+.gitignore
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Temporary
+*.tmp
+*.temp

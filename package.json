@@ -1,0 +1,30 @@
+{
+  "name": "os-express-flutter",
+  "version": "1.0.3",
+  "description": "OS Express - Sistema para Ordens de Serviço, Orçamentos e Vendas",
+  "scripts": {
+    "build": "flutter build web --release",
+    "dev": "flutter run -d web-server --web-port 3000",
+    "clean": "flutter clean && flutter pub get",
+    "analyze": "flutter analyze",
+    "test": "flutter test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vanzer80/OS.git"
+  },
+  "keywords": [
+    "flutter",
+    "dart",
+    "service-orders",
+    "business-management",
+    "supabase"
+  ],
+  "author": "OS Express Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}

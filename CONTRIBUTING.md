@@ -348,3 +348,16 @@ Agradecemos a todos os contribuidores! Sua ajuda é fundamental para o sucesso d
 **Este documento foi inspirado nas melhores práticas de projetos open source.**
 
 *Última atualização: 24 de Setembro de 2024*
+
+## ✅ Checks de CI (como rodar localmente)
+Antes de abrir um PR, rode os mesmos checks que a pipeline:
+
+```bash
+flutter pub get
+flutter format --set-exit-if-changed .
+flutter analyze
+flutter test --coverage
+flutter build web --release
+```
+
+PRs só devem ser enviados quando todos os checks passam localmente. O CI verificará novamente no GitHub e bloqueará merges em caso de falhas.
