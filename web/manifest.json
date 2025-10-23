@@ -1,13 +1,16 @@
 {
-    "name": "os_express_flutter",
-    "short_name": "os_express_flutter",
+    "name": "OS Express - Sistema de Ordens de Serviço",
+    "short_name": "OS Express",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "Sistema completo para gestão de Ordens de Serviço, Orçamentos e Vendas. Gerencie seus clientes, serviços e pagamentos de forma eficiente.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "categories": ["business", "productivity", "utilities"],
+    "lang": "pt-BR",
+    "scope": "/",
     "icons": [
         {
             "src": "icons/Icon-192.png",
