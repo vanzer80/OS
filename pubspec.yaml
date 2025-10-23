@@ -16,7 +16,7 @@ dependencies:
   supabase_flutter: ^2.8.0
   
   # Authentication
-  google_sign_in: ^6.2.1
+  google_sign_in: ^7.2.0
   
   # Image & Camera
   image_picker: ^1.1.2
