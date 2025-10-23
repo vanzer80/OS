@@ -13,6 +13,7 @@ import '../orders/add_order_screen.dart';
 import '../orders/edit_order_screen.dart';
 import '../orders/order_details_screen.dart';
 import '../profile/company_profile_screen.dart';
+import '../finance/finance_dashboard_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -28,6 +29,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     const HomeTab(),
     const ClientsTab(),
     const OrdersTab(),
+    const FinanceDashboardScreen(),
     const ProfileTab(),
   ];
 
@@ -84,6 +86,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.assignment_outlined),
             selectedIcon: Icon(Icons.assignment),
             label: 'Ordens',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.payments_outlined),
+            selectedIcon: Icon(Icons.payments),
+            label: 'Financeiro',
           ),
           NavigationDestination(
             icon: Icon(Icons.person_outlined),
@@ -303,6 +310,27 @@ class HomeTab extends ConsumerWidget {
                     color: Colors.purple,
                     onTap: () {
                       // TODO: Navegar para nova venda
+                    },
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _QuickActionCard(
+                    title: 'Financeiro',
+                    subtitle: 'Dashboard e Transações',
+                    icon: Icons.payments,
+                    color: Colors.blueAccent,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const FinanceDashboardScreen(),
+                        ),
+                      );
                     },
                   ),
                 ),
