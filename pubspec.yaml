@@ -21,7 +21,7 @@ dependencies:
   # Image & Camera
   image_picker: ^1.1.2
   permission_handler: ^11.4.0
-  file_picker: ^8.3.7
+  file_picker: ^10.3.3
   
   # PDF Generation
   pdf: ^3.11.1
